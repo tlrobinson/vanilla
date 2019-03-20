@@ -38,9 +38,18 @@ describe("Default Vanilla parser", () => {
   });
 
   describe("replace", () => {
-    it("should replace a clause", () => {
+    it("should replace a clause in it's parent", () => {
       const o = Vanilla.parse(ORIGINAL);
       const oo = o.foo[1].replace({ baz: 42 }).root();
+      expect(oo).toBeInstanceOf(VanillaObject);
+      expect(oo.foo).toBeInstanceOf(VanillaArray);
+      expect(oo.foo[0]).toBeInstanceOf(VanillaObject);
+      expect(oo.foo[1]).toBeInstanceOf(VanillaObject);
+      expect(oo.raw()).toEqual({ foo: [{ bar: 123 }, { baz: 42 }] });
+    });
+    it("should replace a child clause", () => {
+      const o = Vanilla.parse(ORIGINAL);
+      const oo = o.foo.replace(1, { baz: 42 }).root();
       expect(oo).toBeInstanceOf(VanillaObject);
       expect(oo.foo).toBeInstanceOf(VanillaArray);
       expect(oo.foo[0]).toBeInstanceOf(VanillaObject);

@@ -36,7 +36,7 @@ const VanillaCommon = {
         this._parent.parse(value, this._key),
       );
     } else if (args.length === 2) {
-      const [value, key] = args;
+      const [key, value] = args;
       return this._replace(key, this.parse(value, key));
     }
   },
