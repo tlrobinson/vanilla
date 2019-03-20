@@ -1,0 +1,18 @@
+{
+  "name": "vanilla",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Tom Robinson <tlrobinson@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^24.5.0",
+    "prettier": "^1.16.4"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "underscore": "^1.9.1"
+  }
+}
