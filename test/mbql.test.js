@@ -3,27 +3,42 @@ const { Query } = MBQL;
 
 const ORIGINAL_QUERY = { aggregation: [["sum", ["field-id", 1]]] };
 
+const metadata = {
+  fields: {
+    1: { displayName: () => "Hello" },
+    2: { displayName: () => "World" },
+  },
+  field(id) {
+    return metadata.fields[id];
+  },
+};
+
 describe("MBQL Vanilla parser", () => {
   describe("displayName", () => {
     it("should format `datetime-field` with `fk->`", () => {
-      const f = MBQL.parse([
-        "datetime-field",
-        ["fk->", ["field-id", 1], ["field-id", 2]],
-        "month",
-      ]);
-      expect(f.displayName()).toBe("Field1 → Field2: Month");
+      const f = MBQL.parse(
+        ["datetime-field", ["fk->", ["field-id", 1], ["field-id", 2]], "month"],
+        { metadata },
+      );
+      expect(f.displayName()).toBe("Hello → World: Month");
     });
     it("should format `order-by`s on `aggregation` references", () => {
-      const q = MBQL.parseQuery({
-        aggregation: [["sum", ["field-id", 1]]],
-        "order-by": [["asc", ["aggregation", 0]]],
-      });
-      expect(q["order-by"][0].displayName()).toBe("Sum of Field1: Ascending");
+      const q = MBQL.parseQuery(
+        {
+          aggregation: [["sum", ["field-id", 1]]],
+          "order-by": [["asc", ["aggregation", 0]]],
+        },
+        { metadata },
+      );
+      expect(q["order-by"][0].displayName()).toBe("Sum of Hello: Ascending");
     });
     it("should format `named` aggregations", () => {
-      const q = MBQL.parseQuery({
-        aggregation: [["named", ["+", ["sum", ["field-id", 1]]], "Foo"]],
-      });
+      const q = MBQL.parseQuery(
+        {
+          aggregation: [["named", ["+", ["sum", ["field-id", 1]]], "Foo"]],
+        },
+        { metadata },
+      );
       expect(q["aggregation"][0].displayName()).toBe("Foo");
     });
   });

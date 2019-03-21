@@ -2,6 +2,9 @@ const { VanillaParser, VanillaObject, VanillaArray } = require("./src/vanilla");
 const _ = require("underscore");
 
 MBQLCommon = {
+  metadata() {
+    return this._meta.metadata;
+  },
   query() {
     return this.parent().query();
   },
@@ -30,12 +33,12 @@ class MBQLParser extends VanillaParser {
     return super.getClass(mbql, parent, key);
   }
 
-  parseQuery(query) {
-    return this.parse(query, null, null, Query);
+  parseQuery(query, meta) {
+    return this.parse(query, meta, null, null, Query);
   }
 
-  parseQuestion(question) {
-    return this.parse(question, null, null, Question);
+  parseQuestion(question, meta) {
+    return this.parse(question, meta, null, null, Question);
   }
 }
 
@@ -76,7 +79,7 @@ class Query extends MBQLObject {
     const expressions = this.expressions
       ? Object.entries(this.expressions.raw())
       : {};
-    return this._parser.parse(expressions, this, "expressions", ExpressionList);
+    return this.parse(expressions, "expressions", ExpressionList);
   }
   filters() {
     const filters = !this.filter
@@ -84,7 +87,7 @@ class Query extends MBQLObject {
       : this.filter[0] === "and"
       ? this.filter.slice(1)
       : [this.filter];
-    return this._parser.parse(filters, this, "filter", FilterList);
+    return this.parse(filters, "filter", FilterList);
   }
   aggregations() {
     return this.aggregation || this.parse([], "aggregation");
@@ -168,8 +171,10 @@ const MBQL_CLAUSES = {};
 
 MBQL_CLAUSES["field-id"] = class FieldId extends MBQLArray {
   displayName() {
-    // TODO: pass metadata in
-    return `Field${this.fieldId()}`;
+    return this.field().displayName();
+  }
+  field() {
+    return this.metadata().field(this.fieldId());
   }
   fieldId() {
     return this[1];

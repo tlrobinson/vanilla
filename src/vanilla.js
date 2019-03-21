@@ -14,8 +14,8 @@ const VanillaCommon = {
   clone() {
     return new this.constructor(this, this._parser, this._parent, this._key);
   },
-  parse(raw, key = null) {
-    return this._parser.parse(raw, this, key);
+  parse(raw, key = null, WrapperClass = null) {
+    return this._parser.parse(raw, this._meta, this, key, WrapperClass);
   },
 
   parent() {
@@ -76,11 +76,12 @@ const VanillaCommon = {
 };
 
 class VanillaObject {
-  constructor(object, parser, parent, key) {
-    Object.assign(this, object);
+  constructor(raw, parser, parent, key, meta) {
+    Object.assign(this, raw);
     this.private("_parser", parser);
     this.private("_parent", parent);
     this.private("_key", key);
+    this.private("_meta", meta);
   }
 
   _replace(key, value) {
@@ -100,16 +101,17 @@ class VanillaObject {
 Object.assign(VanillaObject.prototype, VanillaCommon);
 
 class VanillaArray extends Array {
-  constructor(raw, parser, parent, key) {
+  constructor(raw, parser, parent, key, meta) {
     if (typeof raw === "number") {
       super(raw);
     } else {
-      super((raw || []).length);
+      super(raw ? raw.length : 0);
       Object.assign(this, raw);
     }
     this.private("_parser", parser);
     this.private("_parent", parent);
     this.private("_key", key);
+    this.private("_meta", meta);
   }
 
   _replace(key, value) {
@@ -139,19 +141,10 @@ class VanillaParser {
     this._defaultArrayClass = defaultArrayClass;
   }
 
-  parse(raw, parent, key, WrapperClass) {
+  parse(raw, meta, parent, key, WrapperClass) {
     if (typeof raw === "object" && raw != null) {
-      if (
-        raw.constructor === WrapperClass &&
-        raw._parent === parent &&
-        raw._key === key
-      ) {
-        console.log("ok");
-        return raw;
-      }
-
       WrapperClass = WrapperClass || this.getClass(raw, parent, key);
-      const object = new WrapperClass(null, this, parent, key);
+      const object = new WrapperClass(null, this, parent, key, meta);
 
       if (Array.isArray(raw)) {
         for (let key = 0; key < raw.length; key++) {
