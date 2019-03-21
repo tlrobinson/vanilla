@@ -5,6 +5,9 @@ MBQLCommon = {
   query() {
     return this.parent().query();
   },
+  question() {
+    return this.parent().question();
+  },
 };
 
 class MBQLObject extends VanillaObject {}
@@ -30,10 +33,39 @@ class MBQLParser extends VanillaParser {
   parseQuery(query) {
     return this.parse(query, null, null, Query);
   }
+
+  parseQuestion(question) {
+    return this.parse(question, null, null, Question);
+  }
 }
 
+class Question extends MBQLObject {
+  getChildClass(raw, key) {
+    if (key === "dataset_query") {
+      if (raw.type === "native") {
+        return NativeDatasetQuery;
+      } else {
+        return StructuredDatasetQuery;
+      }
+    }
+  }
+  question() {
+    return this;
+  }
+}
+
+class StructuredDatasetQuery extends MBQLObject {
+  getChildClass(raw, key) {
+    if (key === "query") {
+      return Query;
+    }
+  }
+}
+
+class NativeDatasetQuery extends MBQLObject {}
+
 class Query extends MBQLObject {
-  getChildClass(mbql, key) {
+  getChildClass(raw, key) {
     return QUERY_CLAUSES[key];
   }
   query() {
