@@ -146,19 +146,24 @@ class VanillaParser {
       WrapperClass = WrapperClass || this.getClass(raw, parent, key);
       const object = new WrapperClass(null, this, parent, key, meta);
 
+      const parseChild =
+        typeof object.parse === "function"
+          ? (value, key) => object.parse(value, key)
+          : (value, key) => this.parse(value, meta, object, key);
+
       if (Array.isArray(raw)) {
         for (let key = 0; key < raw.length; key++) {
           const value = raw[key];
-          object[key] = object.parse(value, key);
+          object[key] = parseChild(value, key);
         }
       } else {
         for (const key in raw) {
           const value = raw[key];
-          object[key] = object.parse(value, key);
+          object[key] = parseChild(value, key);
         }
       }
 
-      return object.freeze();
+      return Object.freeze(object);
     }
     return raw;
   }

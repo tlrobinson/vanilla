@@ -77,8 +77,8 @@ class Query extends MBQLObject {
 
   expressionList() {
     const expressions = this.expressions
-      ? Object.entries(this.expressions.raw())
-      : {};
+      ? Object.entries(this.expressions)
+      : [];
     return this.parse(expressions, "expressions", ExpressionList);
   }
   filters() {
@@ -124,7 +124,7 @@ class MBQLNullableObject extends MBQLObject {
 
 const QUERY_CLAUSES = {};
 
-QUERY_CLAUSES["expressions"] = class Expressions extends MBQLNullableObject {};
+QUERY_CLAUSES["expressions"] = Object; // objects that can have arbitrary keys must not have additional methods
 QUERY_CLAUSES[
   "aggregation"
 ] = class AggregationList extends MBQLNullableArray {};
@@ -144,6 +144,7 @@ class FilterList extends MBQLArray {
   }
 }
 
+// a "virtual" clause the converts an expression object into a
 class ExpressionList extends MBQLArray {
   parent() {
     if (this.length === 0) {
@@ -158,7 +159,11 @@ class ExpressionList extends MBQLArray {
   }
 }
 
+// this is used by ExpressionList, not an actual MBQL clause
 class Expression extends MBQLArray {
+  displayName() {
+    return this.name();
+  }
   name() {
     return this[0];
   }
@@ -227,7 +232,7 @@ MBQL_CLAUSES["aggregation"] = class AggregationReference extends MBQLArray {
   }
 };
 
-MBQL_CLAUSES["asc"] = class Ascending extends MBQLArray {
+MBQL_CLAUSES["asc"] = class SortAscending extends MBQLArray {
   displayName() {
     return `${this.dimension().displayName()}: Ascending`;
   }
@@ -235,7 +240,7 @@ MBQL_CLAUSES["asc"] = class Ascending extends MBQLArray {
     return this[1];
   }
 };
-MBQL_CLAUSES["desc"] = class Descending extends MBQLArray {
+MBQL_CLAUSES["desc"] = class SortDescending extends MBQLArray {
   displayName() {
     return `${this.dimension().displayName()}: Descending`;
   }
@@ -244,8 +249,28 @@ MBQL_CLAUSES["desc"] = class Descending extends MBQLArray {
   }
 };
 
-MBQL_CLAUSES["metric"] = class Metric extends MBQLArray {};
-MBQL_CLAUSES["segment"] = class Segment extends MBQLArray {};
+MBQL_CLAUSES["metric"] = class Metric extends MBQLArray {
+  displayName() {
+    return this.metric().displayName();
+  }
+  metric() {
+    return this.metadata().metric(this.metricId());
+  }
+  metricId() {
+    return this[1];
+  }
+};
+MBQL_CLAUSES["segment"] = class Segment extends MBQLArray {
+  displayName() {
+    return this.segment().displayName();
+  }
+  segment() {
+    return this.metadata().segment(this.segmentId());
+  }
+  segmentId() {
+    return this[1];
+  }
+};
 
 MBQL_CLAUSES["and"] = class AndFilter extends MBQLArray {};
 MBQL_CLAUSES["or"] = class OrFilter extends MBQLArray {};
