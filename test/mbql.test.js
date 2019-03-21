@@ -8,9 +8,11 @@ const metadata = {
     1: { displayName: () => "Hello" },
     2: { displayName: () => "World" },
   },
-  field(id) {
-    return metadata.fields[id];
+  tables: {
+    1: { displayName: () => "Foo" },
   },
+  field: id => metadata.fields[id],
+  table: id => metadata.tables[id],
 };
 
 describe("MBQL Vanilla parser", () => {
@@ -74,6 +76,14 @@ describe("MBQL Vanilla parser", () => {
   });
 
   describe("Query", () => {
+    describe("parse", () => {
+      it("should inherit the query", () => {
+        const q = MBQL.parseQuery({ aggregation: [["count"]] });
+        const a = q.parse(["aggregation", 0]);
+        expect(a.displayName()).toEqual("Count");
+      });
+    });
+
     describe("filters()", () => {
       let q1, q2, q3, q4;
       beforeAll(() => {
@@ -250,6 +260,35 @@ describe("MBQL Vanilla parser", () => {
         expect(q3.expressionList()).toHaveLength(0);
         expect(q3.raw()).toEqual({});
       });
+    });
+  });
+
+  describe("nested queries", () => {
+    let q;
+    beforeAll(() => {
+      q = MBQL.parseQuery(
+        {
+          "source-query": {
+            "source-query": {
+              "source-table": 1,
+              filter: ["and", ["segment", 1], ["segment", 2]],
+            },
+            filter: ["=", ["field-id", 1], 42],
+          },
+        },
+        { metadata },
+      );
+    });
+
+    it("queries", () => {
+      const queries = q.queries();
+      expect(queries).toHaveLength(3);
+      expect(queries[0]["source-table"]).toBe(1);
+      expect(queries.map(q => q.filters().length)).toEqual([2, 1, 0]);
+    });
+
+    it("rootQuery", () => {
+      expect(q.rootQuery()["source-table"]).toBe(1);
     });
   });
 });

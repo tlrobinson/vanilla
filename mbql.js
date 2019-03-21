@@ -19,6 +19,25 @@ Object.assign(MBQLObject.prototype, MBQLCommon);
 class MBQLArray extends VanillaArray {}
 Object.assign(MBQLArray.prototype, MBQLCommon);
 
+class MBQLNullableArray extends MBQLArray {
+  parent() {
+    if (this.length === 0) {
+      return this._parent.remove(this._key);
+    } else if (this.length === 1) {
+      return this._parent.replace(this._key, this);
+    }
+  }
+}
+class MBQLNullableObject extends MBQLObject {
+  parent() {
+    if (this.length === 0) {
+      return this._parent.remove(this._key);
+    } else if (this.length === 1) {
+      return this._parent.replace(this._key, this);
+    }
+  }
+}
+
 class MBQLParser extends VanillaParser {
   constructor() {
     super(MBQLObject, MBQLArray);
@@ -63,6 +82,25 @@ class StructuredDatasetQuery extends MBQLObject {
       return Query;
     }
   }
+
+  expressions() {
+    return this.query.expressionList();
+  }
+  filters() {
+    return this.query.filters();
+  }
+  aggregations() {
+    return this.query.aggregations();
+  }
+  breakouts() {
+    return this.query.breakouts();
+  }
+  sorts() {
+    return this.query.sorts();
+  }
+  fields() {
+    return this.query.fields();
+  }
 }
 
 class NativeDatasetQuery extends MBQLObject {}
@@ -101,28 +139,48 @@ class Query extends MBQLObject {
   fields() {
     return this.fields || this.parse([], "fields");
   }
-}
 
-class MBQLNullableArray extends MBQLArray {
-  parent() {
-    if (this.length === 0) {
-      return this._parent.remove(this._key);
-    } else if (this.length === 1) {
-      return this._parent.replace(this._key, this);
+  table() {
+    if (this["source-table"]) {
+      return this.metadata().table(this["source-table"]);
+    } else if (this["source-query"]) {
+      throw "nyi";
     }
   }
-}
-class MBQLNullableObject extends MBQLObject {
-  parent() {
-    if (this.length === 0) {
-      return this._parent.remove(this._key);
-    } else if (this.length === 1) {
-      return this._parent.replace(this._key, this);
+
+  sourceTable() {
+    return this.rootQuery().table();
+  }
+
+  rootQuery() {
+    let query = this;
+    let next;
+    while ((next = query.sourceQuery())) {
+      query = next;
     }
+    return query;
+  }
+
+  sourceQuery() {
+    return this["source-query"];
+  }
+
+  queries() {
+    const stages = [];
+    for (let query = this; query; query = query.sourceQuery()) {
+      stages.unshift(query);
+    }
+    return stages;
   }
 }
 
 const QUERY_CLAUSES = {};
+
+QUERY_CLAUSES["source-query"] = class SourceQuery extends Query {
+  parentQuery() {
+    return this.parent();
+  }
+};
 
 QUERY_CLAUSES["expressions"] = Object; // objects that can have arbitrary keys must not have additional methods
 QUERY_CLAUSES[
