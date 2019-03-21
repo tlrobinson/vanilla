@@ -28,6 +28,20 @@ describe("Default Vanilla parser", () => {
       const o = Vanilla.parse(ORIGINAL);
       expect(JSON.stringify(o)).toEqual(JSON.stringify(ORIGINAL));
     });
+
+    it("should have numeric _key for arrays", () => {
+      expect(Vanilla.parse([{ foo: "bar" }])[0]._key).toBe(0);
+    });
+
+    xit("should work with conflicting keys", () => {
+      const q = Vanilla.parse({ foo: { parent: [] } });
+      expect(
+        q.foo.parent
+          .replace([1, 2, 3])
+          .root()
+          .raw(),
+      ).toEqual({});
+    });
   });
 
   describe("raw", () => {
@@ -60,6 +74,13 @@ describe("Default Vanilla parser", () => {
       const o = Vanilla.parse(ORIGINAL);
       const oo = o.foo[1].replace({ baz: 42 }).root();
       expect(o.raw()).toEqual(ORIGINAL);
+    });
+
+    xit("should update siblings", () => {
+      const o = Vanilla.parse({ foo: ["bar"], baz: ["buz"] });
+      const oo = o.foo.replace(0, "BAR").root();
+      expect(oo.raw()).toEqual({ foo: ["BAR"], baz: ["buz"] });
+      expect(oo.baz.root().raw()).toEqual({ foo: ["BAR"], baz: ["buz"] });
     });
   });
 });

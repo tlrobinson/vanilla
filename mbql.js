@@ -1,4 +1,5 @@
 const { VanillaParser, VanillaObject, VanillaArray } = require("./src/vanilla");
+const _ = require("underscore");
 
 MBQLCommon = {
   query() {
@@ -38,16 +39,98 @@ class Query extends MBQLObject {
   query() {
     return this;
   }
+
+  expressionList() {
+    const expressions = this.expressions
+      ? Object.entries(this.expressions.raw())
+      : {};
+    return this._parser.parse(expressions, this, "expressions", ExpressionList);
+  }
+  filters() {
+    const filters = !this.filter
+      ? []
+      : this.filter[0] === "and"
+      ? this.filter.slice(1)
+      : [this.filter];
+    return this._parser.parse(filters, this, "filter", FilterList);
+  }
+  aggregations() {
+    return this.aggregation || this.parse([], "aggregation");
+  }
+  breakouts() {
+    return this.breakout || this.parse([], "breakout");
+  }
+  sorts() {
+    return this["order-by"] || this.parse([], "order-by");
+  }
+  fields() {
+    return this.fields || this.parse([], "fields");
+  }
+}
+
+class MBQLNullableArray extends MBQLArray {
+  parent() {
+    if (this.length === 0) {
+      return this._parent.remove(this._key);
+    } else if (this.length === 1) {
+      return this._parent.replace(this._key, this);
+    }
+  }
+}
+class MBQLNullableObject extends MBQLObject {
+  parent() {
+    if (this.length === 0) {
+      return this._parent.remove(this._key);
+    } else if (this.length === 1) {
+      return this._parent.replace(this._key, this);
+    }
+  }
 }
 
 const QUERY_CLAUSES = {};
 
-QUERY_CLAUSES["expressions"] = class Expressions extends MBQLObject {};
-// QUERY_CLAUSES["filter"] = class FilterList extends MBQLArray {}; // filter is itself a single filter (which may be AND/OR-ed with multiple filters)
-QUERY_CLAUSES["aggregation"] = class AggregationList extends MBQLArray {};
-QUERY_CLAUSES["breakout"] = class BreakoutList extends MBQLArray {};
-QUERY_CLAUSES["order-by"] = class SortList extends MBQLArray {};
-QUERY_CLAUSES["fields"] = class FieldList extends MBQLArray {};
+QUERY_CLAUSES["expressions"] = class Expressions extends MBQLNullableObject {};
+QUERY_CLAUSES[
+  "aggregation"
+] = class AggregationList extends MBQLNullableArray {};
+QUERY_CLAUSES["breakout"] = class BreakoutList extends MBQLNullableArray {};
+QUERY_CLAUSES["order-by"] = class SortList extends MBQLNullableArray {};
+QUERY_CLAUSES["fields"] = class FieldList extends MBQLNullableArray {};
+
+class FilterList extends MBQLArray {
+  parent() {
+    if (this.length === 0) {
+      return this._parent.remove(this._key);
+    } else if (this.length === 1) {
+      return this._parent.replace(this._key, this[0]);
+    } else {
+      return this._parent.replace(this._key, ["and", ...this]);
+    }
+  }
+}
+
+class ExpressionList extends MBQLArray {
+  parent() {
+    if (this.length === 0) {
+      return this._parent.remove(this._key);
+    } else {
+      const expressions = _.object(this);
+      return this._parent.replace(this._key, expressions);
+    }
+  }
+  getChildClass() {
+    return Expression;
+  }
+}
+
+class Expression extends MBQLArray {
+  name() {
+    return this[0];
+  }
+  expression() {
+    return this[1];
+  }
+}
 
 const MBQL_CLAUSES = {};
 
@@ -154,8 +237,9 @@ MBQL_CLAUSES["named"] = class Named extends MBQLArray {
 MBQL_CLAUSES["="] = class Equals extends MBQLArray {};
 MBQL_CLAUSES["time-interval"] = class TimeInterval extends MBQLArray {};
 
-module.exports = new MBQLParser();
-module.exports.CLAUSES = MBQL_CLAUSES;
-module.exports.QUERY_CLAUSES = QUERY_CLAUSES;
+const MBQL = new MBQLParser();
+MBQL.CLAUSES = MBQL_CLAUSES;
+MBQL.QUERY_CLAUSES = QUERY_CLAUSES;
 
+module.exports = MBQL;
 module.exports.Query = Query;
