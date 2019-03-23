@@ -50,7 +50,28 @@ const VanillaCommon = {
   },
   // replace(value): replaces itself in parent
   replace(value) {
-    return this._parent._set(this._key, this._parent.parse(value, this._key));
+    if (this._parent && this._key !== undefined) {
+      return this._parent._set(
+        this._key,
+        this._parent.parse(value, this._key, this.constructor),
+      );
+    } else {
+      throw new Error("Can't replace node without a parent");
+    }
+  },
+  // TODO: better name?
+  _replace(value) {
+    if (this._parent) {
+      return this._parent.parse(value, this._key, this.constructor);
+    } else {
+      return this._parser.parse(
+        value,
+        this._meta,
+        this._parent,
+        this._key,
+        this.constructor,
+      );
+    }
   },
   // add(value): adds child
   add(value) {
@@ -87,14 +108,15 @@ class VanillaObject {
   }
 
   _set(key, value) {
-    const object = this.clone();
-    object[key] = this.parse(value, key);
-    return object.freeze();
+    return this._replace({
+      ...this,
+      [key]: value,
+    });
   }
   _remove(key) {
-    const object = this.clone();
-    delete object[key];
-    return object.freeze();
+    const copy = { ...this };
+    delete copy[key];
+    return this._replace(copy);
   }
 }
 Object.assign(VanillaObject.prototype, VanillaCommon);
@@ -114,19 +136,17 @@ class VanillaArray extends Array {
   }
 
   _set(key, value) {
-    const array = this.clone();
-    array[key] = this.parse(value, key);
-    return array.freeze();
+    return this._replace([
+      ...this.slice(0, key),
+      value,
+      ...this.slice(key + 1),
+    ]);
   }
   _add(value) {
-    const array = this.clone();
-    array.push(this.parse(value, array.length));
-    return array.freeze();
+    return this._replace([...this, value]);
   }
-  _remove(index) {
-    const array = this.clone();
-    array.splice(index, 1);
-    return array.freeze();
+  _remove(key) {
+    return this._replace([...this.slice(0, key), ...this.slice(key + 1)]);
   }
 }
 Object.assign(VanillaArray.prototype, VanillaCommon);

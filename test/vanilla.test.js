@@ -13,6 +13,25 @@ describe("Vanilla parser", () => {
     describe(`${lazy ? "lazy" : "eager"} mode`, () => {
       const Vanilla = new VanillaParser(VanillaObject, VanillaArray, lazy);
       describe("parse", () => {
+        it(`should ${lazy ? "" : "not "}be lazy`, () => {
+          let count = 0;
+          class TestObject extends VanillaObject {
+            constructor(...args) {
+              super(...args);
+              count++;
+            }
+          }
+          const parser = new VanillaParser(TestObject, VanillaArray, lazy);
+          const o = parser.parse({ foo: { bar: { baz: { buz: "buz" } } } });
+          expect(count).toEqual(lazy ? 1 : 4);
+          o.foo;
+          expect(count).toEqual(lazy ? 2 : 4);
+          o.foo.bar;
+          expect(count).toEqual(lazy ? 3 : 4);
+          o.foo.bar.baz;
+          expect(count).toEqual(4);
+        });
+
         it("should freeze objects", () => {
           "use strict";
           const o = Vanilla.parse(ORIGINAL);
@@ -90,7 +109,7 @@ describe("Vanilla parser", () => {
           expect(o.raw()).toEqual({ foo: ["bar"], baz: ["buz"] });
           expect(o.baz.root().raw()).toEqual({ foo: ["bar"], baz: ["buz"] });
         });
-        xit("should update sibling parents", () => {
+        it("should update sibling parents", () => {
           const o = Vanilla.parse({ foo: ["bar"], baz: ["buz"] });
           const oo = o.foo.set(0, "BAR").root();
           expect(oo.raw()).toEqual({ foo: ["BAR"], baz: ["buz"] });
@@ -122,7 +141,7 @@ describe("Vanilla parser", () => {
           expect(oo.raw()).toEqual({ foo: [{ bar: "bar" }, { buz: "buz" }] });
         });
 
-        xit("should update sibling parents", () => {
+        it("should update sibling parents", () => {
           const o = Vanilla.parse({ foo: ["bar"], baz: ["buz"] });
           const oo = o.foo.add("BAR").root();
           expect(oo.raw()).toEqual({ foo: ["bar", "BAR"], baz: ["buz"] });
