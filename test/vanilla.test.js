@@ -14,22 +14,15 @@ describe("Vanilla parser", () => {
       const Vanilla = new VanillaParser(VanillaObject, VanillaArray, lazy);
       describe("parse", () => {
         it(`should ${lazy ? "" : "not "}be lazy`, () => {
-          let count = 0;
-          class TestObject extends VanillaObject {
-            constructor(...args) {
-              super(...args);
-              count++;
-            }
-          }
-          const parser = new VanillaParser(TestObject, VanillaArray, lazy);
+          const parser = parserWithCounters(lazy);
           const o = parser.parse({ foo: { bar: { baz: { buz: "buz" } } } });
-          expect(count).toEqual(lazy ? 1 : 4);
+          expect(parser.objects).toEqual(lazy ? 1 : 4);
           o.foo;
-          expect(count).toEqual(lazy ? 2 : 4);
+          expect(parser.objects).toEqual(lazy ? 2 : 4);
           o.foo.bar;
-          expect(count).toEqual(lazy ? 3 : 4);
+          expect(parser.objects).toEqual(lazy ? 3 : 4);
           o.foo.bar.baz;
-          expect(count).toEqual(4);
+          expect(parser.objects).toEqual(4);
         });
 
         it("should freeze objects", () => {
@@ -82,6 +75,34 @@ describe("Vanilla parser", () => {
         it("should return same parsed child properties each time", () => {
           const p = Vanilla.parse(ORIGINAL);
           expect(p.foo).toBe(p.foo);
+        });
+      });
+
+      describe("parent", () => {
+        it("shouldn't create a new wrapper if the child hasn't been modified", () => {
+          const o = Vanilla.parse(ORIGINAL);
+          expect(o.foo.parent()).toBe(o);
+        });
+        it("should create a new wrapper if the child has been modified", () => {
+          const o = Vanilla.parse(ORIGINAL);
+          const oo = o.foo.add("x").parent();
+          expect(oo).not.toBe(o);
+          expect(oo.raw()).toEqual({ foo: [{ bar: 123 }, { baz: 234 }, "x"] });
+        });
+      });
+
+      describe("root", () => {
+        it("shouldn't create a new wrapper if the child hasn't been modified", () => {
+          const o = Vanilla.parse(ORIGINAL);
+          expect(o.foo[0].root()).toBe(o);
+        });
+        it("should create a new wrapper if the child has been modified", () => {
+          const o = Vanilla.parse(ORIGINAL);
+          const oo = o.foo[0].set("x", "y").root();
+          expect(oo).not.toBe(o);
+          expect(oo.raw()).toEqual({
+            foo: [{ bar: 123, x: "y" }, { baz: 234 }],
+          });
         });
       });
 
@@ -159,7 +180,49 @@ describe("Vanilla parser", () => {
         });
       });
 
-      describe("remove", () => {});
+      describe("remove", () => {
+        it("should add a value", () => {
+          const o = Vanilla.parse({ foo: [{ bar: "bar" }] });
+          const oo = o.foo.add({ buz: "buz" }).root();
+          expect(oo.raw()).toEqual({ foo: [{ bar: "bar" }, { buz: "buz" }] });
+        });
+
+        it("should update sibling parents", () => {
+          const o = Vanilla.parse({ foo: ["bar"], baz: ["buz"] });
+          const oo = o.foo.add("BAR").root();
+          expect(oo.raw()).toEqual({ foo: ["bar", "BAR"], baz: ["buz"] });
+          expect(oo.baz.root().raw()).toEqual({
+            foo: ["bar", "BAR"],
+            baz: ["buz"],
+          });
+        });
+
+        it("should not mutate existing tree", () => {
+          const o = Vanilla.parse({ foo: ["bar"], baz: ["buz"] });
+          const oo = o.foo.set(0, "BAR").root();
+          expect(o.raw()).toEqual({ foo: ["bar"], baz: ["buz"] });
+          expect(o.baz.root().raw()).toEqual({ foo: ["bar"], baz: ["buz"] });
+        });
+      });
     });
   }
 });
+
+function parserWithCounters(lazy) {
+  class TestObject extends VanillaObject {
+    constructor(...args) {
+      super(...args);
+      parser.objects++;
+    }
+  }
+  class TestArray extends VanillaArray {
+    constructor(...args) {
+      super(...args);
+      parser.arrays++;
+    }
+  }
+  const parser = new VanillaParser(TestObject, VanillaArray, lazy);
+  parser.objects = 0;
+  parser.arrays = 0;
+  return parser;
+}

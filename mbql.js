@@ -245,9 +245,9 @@ MBQL_CLAUSES["field-id"] = class FieldId extends MBQLArray {
 };
 MBQL_CLAUSES["fk->"] = class FkField extends MBQLArray {
   displayName() {
-    return `${this.fkDimension().displayName()} → ${this.targetDimension().displayName()}`;
+    return `${this.foreignKeyDimension().displayName()} → ${this.targetDimension().displayName()}`;
   }
-  fkDimension() {
+  foreignKeyDimension() {
     return this[1];
   }
   targetDimension() {
