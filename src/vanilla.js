@@ -12,7 +12,13 @@ const VanillaCommon = {
   },
 
   clone() {
-    return new this.constructor(this, this._parser, this._parent, this._key);
+    return new this.constructor(
+      this,
+      this._parser,
+      this._parent,
+      this._key,
+      this._meta,
+    );
   },
   parse(raw, key = null, WrapperClass = null) {
     return this._parser.parse(raw, this._meta, this, key, WrapperClass);
@@ -36,9 +42,19 @@ const VanillaCommon = {
     }
   },
 
-  // add([key ,] value): adds child
-  add(...args) {
-    return this._add(...args);
+  // MUTATION METHODS
+
+  // set(key, value): sets a child property
+  set(key, value) {
+    return this._set(key, this.parse(value, key));
+  },
+  // replace(value): replaces itself in parent
+  replace(value) {
+    return this._parent._set(this._key, this._parent.parse(value, this._key));
+  },
+  // add(value): adds child
+  add(value) {
+    return this._add(value);
   },
   // remove(): removes from parent
   // remove(key): removes child
@@ -49,14 +65,6 @@ const VanillaCommon = {
       const [key] = args;
       return this._remove(key);
     }
-  },
-  // set(key, value): sets a child property
-  set(key, value) {
-    return this._set(key, this.parse(value, key));
-  },
-  // replace(value): replaces itself in parent
-  replace(value) {
-    return this._parent._set(this._key, this._parent.parse(value, this._key));
   },
 
   // UTILS
@@ -82,9 +90,6 @@ class VanillaObject {
     const object = this.clone();
     object[key] = this.parse(value, key);
     return object.freeze();
-  }
-  _add(key, value) {
-    return this._set(key, value);
   }
   _remove(key) {
     const object = this.clone();
@@ -126,13 +131,17 @@ class VanillaArray extends Array {
 }
 Object.assign(VanillaArray.prototype, VanillaCommon);
 
+const LAZY = typeof Object.defineProperty === "function";
+
 class VanillaParser {
   constructor(
     defaultObjectClass = VanillaObject,
     defaultArrayClass = VanillaArray,
+    lazy = LAZY,
   ) {
     this._defaultObjectClass = defaultObjectClass;
     this._defaultArrayClass = defaultArrayClass;
+    this._lazy = lazy;
   }
 
   parse(raw, meta, parent, key, WrapperClass) {
@@ -140,26 +149,52 @@ class VanillaParser {
       WrapperClass = WrapperClass || this.getClass(raw, parent, key);
       const object = new WrapperClass(null, this, parent, key, meta);
 
-      const parseChild =
-        typeof object.parse === "function"
-          ? (value, key) => object.parse(value, key)
-          : (value, key) => this.parse(value, meta, object, key);
-
-      if (Array.isArray(raw)) {
-        for (let key = 0; key < raw.length; key++) {
-          const value = raw[key];
-          object[key] = parseChild(value, key);
-        }
-      } else {
-        for (const key in raw) {
-          const value = raw[key];
-          object[key] = parseChild(value, key);
-        }
-      }
-
-      return Object.freeze(object);
+      return Object.freeze(this.parseChildren(object, raw, meta));
     }
     return raw;
+  }
+
+  parseChildren(object, raw, meta) {
+    if (Array.isArray(raw)) {
+      for (let key = 0; key < raw.length; key++) {
+        this.parseChild(object, raw, meta, key);
+      }
+    } else {
+      for (const key in raw) {
+        if (Object.prototype.hasOwnProperty.call(raw, key)) {
+          this.parseChild(object, raw, meta, key);
+        }
+      }
+    }
+    return object;
+  }
+
+  parseChild(object, raw, meta, key) {
+    const parser = this;
+    if (this._lazy) {
+      let isParsed = false;
+      let parsed;
+      Object.defineProperty(object, key, {
+        configurable: false,
+        enumerable: true,
+        get() {
+          if (!isParsed) {
+            parsed = parser._parseChild(object, raw, meta, key);
+            isParsed = true;
+          }
+          return parsed;
+        },
+      });
+    } else {
+      object[key] = parser._parseChild(object, raw, meta, key);
+    }
+  }
+
+  _parseChild(object, raw, meta, key) {
+    const value = raw[key];
+    return typeof object.parse === "function"
+      ? object.parse(value, key)
+      : this.parse(value, meta, object, key);
   }
 
   getClass(raw, parent, key) {
