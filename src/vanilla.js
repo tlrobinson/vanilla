@@ -23,7 +23,7 @@ const VanillaCommon = {
       if (this.equals(this._parent[this._key])) {
         return this._parent;
       } else {
-        return this._parent._replace(this._key, this);
+        return this._parent._set(this._key, this);
       }
     }
     return null;
@@ -50,19 +50,13 @@ const VanillaCommon = {
       return this._remove(key);
     }
   },
-  // replace(value): // replaces in parent
-  // replace(key, value): replaces child
-  replace(...args) {
-    if (args.length === 1) {
-      const [value] = args;
-      return this._parent._replace(
-        this._key,
-        this._parent.parse(value, this._key),
-      );
-    } else if (args.length === 2) {
-      const [key, value] = args;
-      return this._replace(key, this.parse(value, key));
-    }
+  // set(key, value): sets a child property
+  set(key, value) {
+    return this._set(key, this.parse(value, key));
+  },
+  // replace(value): replaces itself in parent
+  replace(value) {
+    return this._parent._set(this._key, this._parent.parse(value, this._key));
   },
 
   // UTILS
@@ -84,13 +78,13 @@ class VanillaObject {
     this.private("_meta", meta);
   }
 
-  _replace(key, value) {
+  _set(key, value) {
     const object = this.clone();
     object[key] = this.parse(value, key);
     return object.freeze();
   }
   _add(key, value) {
-    return this._replace(key, value);
+    return this._set(key, value);
   }
   _remove(key) {
     const object = this.clone();
@@ -114,7 +108,7 @@ class VanillaArray extends Array {
     this.private("_meta", meta);
   }
 
-  _replace(key, value) {
+  _set(key, value) {
     const array = this.clone();
     array[key] = this.parse(value, key);
     return array.freeze();

@@ -24,7 +24,7 @@ class MBQLNullableArray extends MBQLArray {
     if (this.length === 0) {
       return this._parent.remove(this._key);
     } else if (this.length === 1) {
-      return this._parent.replace(this._key, this);
+      return this._parent.set(this._key, this);
     }
   }
 }
@@ -33,7 +33,7 @@ class MBQLNullableObject extends MBQLObject {
     if (this.length === 0) {
       return this._parent.remove(this._key);
     } else if (this.length === 1) {
-      return this._parent.replace(this._key, this);
+      return this._parent.set(this._key, this);
     }
   }
 }
@@ -195,9 +195,9 @@ class FilterList extends MBQLArray {
     if (this.length === 0) {
       return this._parent.remove(this._key);
     } else if (this.length === 1) {
-      return this._parent.replace(this._key, this[0]);
+      return this._parent.set(this._key, this[0]);
     } else {
-      return this._parent.replace(this._key, ["and", ...this]);
+      return this._parent.set(this._key, ["and", ...this]);
     }
   }
 }
@@ -209,7 +209,7 @@ class ExpressionList extends MBQLArray {
       return this._parent.remove(this._key);
     } else {
       const expressions = _.object(this);
-      return this._parent.replace(this._key, expressions);
+      return this._parent.set(this._key, expressions);
     }
   }
   getChildClass() {
