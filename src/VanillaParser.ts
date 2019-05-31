@@ -1,13 +1,13 @@
 "use strict";
 
-const VanillaObject = require("./VanillaObject");
-const VanillaArray = require("./VanillaArray");
+import VanillaObject from "./VanillaObject";
+import VanillaArray from "./VanillaArray";
 
-class VanillaParser {
+export default class VanillaParser {
   constructor(
     defaultObjectClass = VanillaObject,
     defaultArrayClass = VanillaArray,
-    lazy = true,
+    lazy = true
   ) {
     this._defaultObjectClass = defaultObjectClass;
     this._defaultArrayClass = defaultArrayClass;
@@ -53,7 +53,7 @@ class VanillaParser {
             isParsed = true;
           }
           return parsed;
-        },
+        }
       });
     } else {
       object[key] = parser._parseChild(object, raw, meta, key);
@@ -78,5 +78,3 @@ class VanillaParser {
       : this._defaultObjectClass;
   }
 }
-
-module.exports = VanillaParser;

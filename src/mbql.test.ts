@@ -1,18 +1,17 @@
-const MBQL = require("../mbql");
-const { Query } = MBQL;
+import MBQL, { Query } from "./mbql";
 
 const ORIGINAL_QUERY = { aggregation: [["sum", ["field-id", 1]]] };
 
 const metadata = {
   fields: {
     1: { displayName: () => "Hello" },
-    2: { displayName: () => "World" },
+    2: { displayName: () => "World" }
   },
   tables: {
-    1: { displayName: () => "Foo" },
+    1: { displayName: () => "Foo" }
   },
   field: id => metadata.fields[id],
-  table: id => metadata.tables[id],
+  table: id => metadata.tables[id]
 };
 
 describe("MBQL Vanilla parser", () => {
@@ -20,7 +19,7 @@ describe("MBQL Vanilla parser", () => {
     it("should format `datetime-field` with `fk->`", () => {
       const f = MBQL.parse(
         ["datetime-field", ["fk->", ["field-id", 1], ["field-id", 2]], "month"],
-        { metadata },
+        { metadata }
       );
       expect(f.displayName()).toBe("Hello → World: Month");
     });
@@ -28,18 +27,18 @@ describe("MBQL Vanilla parser", () => {
       const q = MBQL.parseQuery(
         {
           aggregation: [["sum", ["field-id", 1]]],
-          "order-by": [["asc", ["aggregation", 0]]],
+          "order-by": [["asc", ["aggregation", 0]]]
         },
-        { metadata },
+        { metadata }
       );
       expect(q["order-by"][0].displayName()).toBe("Sum of Hello: Ascending");
     });
     it("should format `named` aggregations", () => {
       const q = MBQL.parseQuery(
         {
-          aggregation: [["named", ["+", ["sum", ["field-id", 1]]], "Foo"]],
+          aggregation: [["named", ["+", ["sum", ["field-id", 1]]], "Foo"]]
         },
-        { metadata },
+        { metadata }
       );
       expect(q["aggregation"][0].displayName()).toBe("Foo");
     });
@@ -90,10 +89,10 @@ describe("MBQL Vanilla parser", () => {
         q1 = MBQL.parseQuery({});
         q2 = MBQL.parseQuery({ filter: ["segment", 1] });
         q3 = MBQL.parseQuery({
-          filter: ["and", ["segment", 1]],
+          filter: ["and", ["segment", 1]]
         });
         q4 = MBQL.parseQuery({
-          filter: ["and", ["segment", 1], ["segment", 2]],
+          filter: ["and", ["segment", 1], ["segment", 2]]
         });
       });
 
@@ -109,34 +108,34 @@ describe("MBQL Vanilla parser", () => {
             .filters()
             .add(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({ filter: ["segment", 3] });
         expect(
           q2
             .filters()
             .add(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["and", ["segment", 1], ["segment", 3]],
+          filter: ["and", ["segment", 1], ["segment", 3]]
         });
         expect(
           q3
             .filters()
             .add(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["and", ["segment", 1], ["segment", 3]],
+          filter: ["and", ["segment", 1], ["segment", 3]]
         });
         expect(
           q4
             .filters()
             .add(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["and", ["segment", 1], ["segment", 2], ["segment", 3]],
+          filter: ["and", ["segment", 1], ["segment", 2], ["segment", 3]]
         });
       });
       it("should replace filter correctly", () => {
@@ -145,36 +144,36 @@ describe("MBQL Vanilla parser", () => {
             .filters()[0]
             .replace(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["segment", 3],
+          filter: ["segment", 3]
         });
         expect(
           q3
             .filters()[0]
             .replace(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["segment", 3],
+          filter: ["segment", 3]
         });
         expect(
           q4
             .filters()[0]
             .replace(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["and", ["segment", 3], ["segment", 2]],
+          filter: ["and", ["segment", 3], ["segment", 2]]
         });
         expect(
           q4
             .filters()[1]
             .replace(["segment", 3])
             .query()
-            .raw(),
+            .raw()
         ).toEqual({
-          filter: ["and", ["segment", 1], ["segment", 3]],
+          filter: ["and", ["segment", 1], ["segment", 3]]
         });
       });
     });
@@ -271,12 +270,12 @@ describe("MBQL Vanilla parser", () => {
           "source-query": {
             "source-query": {
               "source-table": 1,
-              filter: ["and", ["segment", 1], ["segment", 2]],
+              filter: ["and", ["segment", 1], ["segment", 2]]
             },
-            filter: ["=", ["field-id", 1], 42],
-          },
+            filter: ["=", ["field-id", 1], 42]
+          }
         },
-        { metadata },
+        { metadata }
       );
     });
 

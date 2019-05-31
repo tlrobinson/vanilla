@@ -1,7 +1,7 @@
-const { VanillaParser, VanillaObject, VanillaArray } = require("./src/vanilla");
-const _ = require("underscore");
+import { VanillaParser, VanillaObject, VanillaArray } from "./vanilla";
+import * as _ from "underscore";
 
-MBQLCommon = {
+const MBQLCommon = {
   metadata() {
     return this._meta.metadata;
   },
@@ -10,7 +10,7 @@ MBQLCommon = {
   },
   question() {
     return this.parent().question();
-  },
+  }
 };
 
 class MBQLObject extends VanillaObject {}
@@ -105,7 +105,7 @@ class StructuredDatasetQuery extends MBQLObject {
 
 class NativeDatasetQuery extends MBQLObject {}
 
-class Query extends MBQLObject {
+export class Query extends MBQLObject {
   getChildClass(raw, key) {
     return QUERY_CLAUSES[key];
   }
@@ -361,5 +361,4 @@ const MBQL = new MBQLParser();
 MBQL.CLAUSES = MBQL_CLAUSES;
 MBQL.QUERY_CLAUSES = QUERY_CLAUSES;
 
-module.exports = MBQL;
-module.exports.Query = Query;
+export default MBQL;

@@ -1,8 +1,9 @@
-const VanillaCommon = require("./VanillaCommon");
+import VanillaCommon from "./VanillaCommon";
 
-class VanillaObject {
+export default class VanillaObject {
   constructor(raw, parser, parent, key, meta) {
     Object.assign(this, raw);
+    Object.setPrototypeOf(this, new.target.prototype);
     this.private("_parser", parser);
     this.private("_parent", parent);
     this.private("_key", key);
@@ -12,7 +13,7 @@ class VanillaObject {
   _set(key, value) {
     return this._replace({
       ...this,
-      [key]: value,
+      [key]: value
     });
   }
   _remove(key) {
@@ -22,5 +23,3 @@ class VanillaObject {
   }
 }
 Object.assign(VanillaObject.prototype, VanillaCommon);
-
-module.exports = VanillaObject;

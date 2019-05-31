@@ -1,10 +1,6 @@
-const {
-  VanillaParser,
-  VanillaArray,
-  VanillaObject,
-} = require("../src/vanilla");
+import { VanillaParser, VanillaArray, VanillaObject } from "./vanilla";
 
-const _ = require("underscore");
+import * as _ from "underscore";
 
 const ORIGINAL = { foo: [{ bar: 123 }, { baz: 234 }] };
 
@@ -59,16 +55,16 @@ describe("Vanilla parser", () => {
             q.foo.parent
               .replace([1, 2, 3])
               .root()
-              .raw(),
+              .raw()
           ).toEqual({ foo: { parent: [1, 2, 3] } });
         });
 
         it("should work with _.isEqual", () => {
           expect(
-            _.isEqual(Vanilla.parse(ORIGINAL), Vanilla.parse(ORIGINAL)),
+            _.isEqual(Vanilla.parse(ORIGINAL), Vanilla.parse(ORIGINAL))
           ).toBe(true);
           expect(_.isEqual(Vanilla.parse(ORIGINAL), Vanilla.parse({}))).toBe(
-            false,
+            false
           );
         });
 
@@ -101,7 +97,7 @@ describe("Vanilla parser", () => {
           const oo = o.foo[0].set("x", "y").root();
           expect(oo).not.toBe(o);
           expect(oo.raw()).toEqual({
-            foo: [{ bar: 123, x: "y" }, { baz: 234 }],
+            foo: [{ bar: 123, x: "y" }, { baz: 234 }]
           });
         });
       });
@@ -168,7 +164,7 @@ describe("Vanilla parser", () => {
           expect(oo.raw()).toEqual({ foo: ["bar", "BAR"], baz: ["buz"] });
           expect(oo.baz.root().raw()).toEqual({
             foo: ["bar", "BAR"],
-            baz: ["buz"],
+            baz: ["buz"]
           });
         });
 
@@ -193,7 +189,7 @@ describe("Vanilla parser", () => {
           expect(oo.raw()).toEqual({ foo: ["bar", "BAR"], baz: ["buz"] });
           expect(oo.baz.root().raw()).toEqual({
             foo: ["bar", "BAR"],
-            baz: ["buz"],
+            baz: ["buz"]
           });
         });
 

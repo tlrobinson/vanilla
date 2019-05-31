@@ -1,4 +1,4 @@
-const _ = require("underscore");
+import * as _ from "underscore";
 
 const VanillaCommon = {
   raw() {
@@ -15,7 +15,7 @@ const VanillaCommon = {
       this._parser,
       this._parent,
       this._key,
-      this._meta,
+      this._meta
     );
   },
   parse(raw, key = null, WrapperClass = null) {
@@ -51,7 +51,7 @@ const VanillaCommon = {
     if (this._parent && this._key !== undefined) {
       return this._parent._set(
         this._key,
-        this._parent.parse(value, this._key, this.constructor),
+        this._parent.parse(value, this._key, this.constructor)
       );
     } else {
       throw new Error("Can't replace node without a parent");
@@ -67,7 +67,7 @@ const VanillaCommon = {
         this._meta,
         this._parent,
         this._key,
-        this.constructor,
+        this.constructor
       );
     }
   },
@@ -93,7 +93,7 @@ const VanillaCommon = {
   },
   freeze() {
     return Object.freeze(this);
-  },
+  }
 };
 
-module.exports = VanillaCommon;
+export default VanillaCommon;

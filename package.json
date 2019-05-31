@@ -4,15 +4,20 @@
   "main": "index.js",
   "author": "Tom Robinson <tlrobinson@gmail.com>",
   "license": "MIT",
-  "devDependencies": {
-    "jest": "^24.5.0",
-    "prettier": "^1.16.4"
-  },
-  "scripts": {
-    "test": "jest ./test",
-    "test:watch": "jest --watch ./test"
-  },
   "dependencies": {
     "underscore": "^1.9.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.13",
+    "jest": "^24.8.0",
+    "prettier": "^1.16.4",
+    "ts-jest": "^24.0.2",
+    "typescript": "^3.5.1"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch"
   }
 }
