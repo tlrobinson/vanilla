@@ -1,5 +1,5 @@
 import * as _ from "underscore";
-import { VanillaParser } from "./vanilla";
+import VanillaParser from "./VanillaParser";
 
 export type VanillaKey = string | number;
 export type VanillaMeta = any;

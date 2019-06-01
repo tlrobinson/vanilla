@@ -1,6 +1,7 @@
 import VanillaInstance, { VanillaKey, VanillaMeta } from "./VanillaInstance";
 import VanillaParser from "./VanillaParser";
 
+// inherits from array
 export default class VanillaArray extends Array implements VanillaInstance {
   _parser: VanillaParser;
   _parent: VanillaInstance;
