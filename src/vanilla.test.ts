@@ -10,7 +10,7 @@ describe("Vanilla parser", () => {
       const Vanilla = new VanillaParser(VanillaObject, VanillaArray, lazy);
       describe("parse", () => {
         it(`should ${lazy ? "" : "not "}be lazy`, () => {
-          const parser = parserWithCounters(lazy);
+          const parser = new VanillaParserWithCounters(lazy);
           const o = parser.parse({ foo: { bar: { baz: { buz: "buz" } } } });
           expect(parser.objects).toEqual(lazy ? 1 : 4);
           o.foo;
@@ -204,21 +204,30 @@ describe("Vanilla parser", () => {
   }
 });
 
-function parserWithCounters(lazy) {
-  class TestObject extends VanillaObject {
-    constructor(...args) {
-      super(...args);
-      parser.objects++;
-    }
+class VanillaParserWithCounters extends VanillaParser {
+  objects: number;
+  arrays: number;
+  _defaultObjectClass: TestObject;
+  _defaultArrayClass: TestArray;
+  constructor(lazy = false) {
+    super(TestObject, TestArray, lazy);
+    this.objects = 0;
+    this.arrays = 0;
   }
-  class TestArray extends VanillaArray {
-    constructor(...args) {
-      super(...args);
-      parser.arrays++;
-    }
+}
+class TestObject extends VanillaObject {
+  _parser: VanillaParserWithCounters;
+  constructor(...args) {
+    // @ts-ignore
+    super(...args);
+    this._parser.objects++;
   }
-  const parser = new VanillaParser(TestObject, VanillaArray, lazy);
-  parser.objects = 0;
-  parser.arrays = 0;
-  return parser;
+}
+class TestArray extends VanillaArray {
+  _parser: VanillaParserWithCounters;
+  constructor(...args) {
+    // @ts-ignore
+    super(...args);
+    this._parser.arrays++;
+  }
 }

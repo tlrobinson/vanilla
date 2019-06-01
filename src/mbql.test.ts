@@ -1,4 +1,4 @@
-import MBQL, { Query } from "./mbql";
+import MBQL, { Query, MBQL_CLAUSES, QUERY_CLAUSES } from "./mbql";
 
 const ORIGINAL_QUERY = { aggregation: [["sum", ["field-id", 1]]] };
 
@@ -48,8 +48,8 @@ describe("MBQL Vanilla parser", () => {
     it("should parse into wrapper classes", () => {
       const q = MBQL.parseQuery(ORIGINAL_QUERY);
       expect(q).toBeInstanceOf(Query);
-      expect(q.aggregation).toBeInstanceOf(MBQL.QUERY_CLAUSES["aggregation"]);
-      expect(q.aggregation[0]).toBeInstanceOf(MBQL.CLAUSES["sum"]);
+      expect(q.aggregation).toBeInstanceOf(QUERY_CLAUSES["aggregation"]);
+      expect(q.aggregation[0]).toBeInstanceOf(MBQL_CLAUSES["sum"]);
     });
 
     it("should serialize to JSON", () => {
@@ -69,7 +69,7 @@ describe("MBQL Vanilla parser", () => {
     it("should replace a clause", () => {
       const q = MBQL.parseQuery(ORIGINAL_QUERY);
       const qq = q.aggregation[0].replace(["count"]).query();
-      expect(qq.aggregation[0]).toBeInstanceOf(MBQL.CLAUSES["count"]);
+      expect(qq.aggregation[0]).toBeInstanceOf(MBQL_CLAUSES["count"]);
       expect(qq.raw()).toEqual({ aggregation: [["count"]] });
     });
   });
@@ -188,7 +188,7 @@ describe("MBQL Vanilla parser", () => {
           .add(["count"])
           .query();
         expect(q2.aggregations()).toHaveLength(1);
-        expect(q2.aggregations()[0]).toBeInstanceOf(MBQL.CLAUSES["count"]);
+        expect(q2.aggregations()[0]).toBeInstanceOf(MBQL_CLAUSES["count"]);
         expect(q2.raw()).toEqual({ aggregation: [["count"]] });
         const q3 = q2
           .aggregations()[0]
@@ -209,7 +209,7 @@ describe("MBQL Vanilla parser", () => {
           .add(["field-id", 1])
           .query();
         expect(q2.breakouts()).toHaveLength(1);
-        expect(q2.breakouts()[0]).toBeInstanceOf(MBQL.CLAUSES["field-id"]);
+        expect(q2.breakouts()[0]).toBeInstanceOf(MBQL_CLAUSES["field-id"]);
         expect(q2.raw()).toEqual({ breakout: [["field-id", 1]] });
         const q3 = q2
           .breakouts()[0]
@@ -230,7 +230,7 @@ describe("MBQL Vanilla parser", () => {
           .add(["asc", ["aggregation", 0]])
           .query();
         expect(q2.sorts()).toHaveLength(1);
-        expect(q2.sorts()[0]).toBeInstanceOf(MBQL.CLAUSES["asc"]);
+        expect(q2.sorts()[0]).toBeInstanceOf(MBQL_CLAUSES["asc"]);
         expect(q2.raw()).toEqual({ "order-by": [["asc", ["aggregation", 0]]] });
         const q3 = q2
           .sorts()[0]

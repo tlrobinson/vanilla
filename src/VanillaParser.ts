@@ -1,9 +1,18 @@
 "use strict";
 
+import VanillaInstance, {
+  VanillaKey,
+  VanillaMeta,
+  VanillaClass
+} from "./VanillaInstance";
 import VanillaObject from "./VanillaObject";
 import VanillaArray from "./VanillaArray";
 
 export default class VanillaParser {
+  _defaultObjectClass: VanillaClass;
+  _defaultArrayClass: VanillaClass;
+  _lazy: boolean;
+
   constructor(
     defaultObjectClass = VanillaObject,
     defaultArrayClass = VanillaArray,
@@ -14,17 +23,22 @@ export default class VanillaParser {
     this._lazy = lazy;
   }
 
-  parse(raw, meta, parent, key, WrapperClass) {
+  parse(
+    raw: any,
+    meta: VanillaMeta = null,
+    parent: VanillaInstance = null,
+    key: VanillaKey = null,
+    WrapperClass: VanillaClass = null
+  ) {
     if (typeof raw === "object" && raw != null) {
       WrapperClass = WrapperClass || this.getClass(raw, parent, key);
       const object = new WrapperClass(null, this, parent, key, meta);
-
       return Object.freeze(this.parseChildren(object, raw, meta));
     }
     return raw;
   }
 
-  parseChildren(object, raw, meta) {
+  parseChildren(object, raw: any, meta: VanillaMeta) {
     if (Array.isArray(raw)) {
       for (let key = 0; key < raw.length; key++) {
         this.parseChild(object, raw, meta, key);
@@ -39,7 +53,7 @@ export default class VanillaParser {
     return object;
   }
 
-  parseChild(object, raw, meta, key) {
+  parseChild(object: any, raw: any, meta: VanillaMeta, key: VanillaKey | null) {
     const parser = this;
     if (this._lazy) {
       let isParsed = false;
@@ -60,15 +74,21 @@ export default class VanillaParser {
     }
   }
 
-  _parseChild(object, raw, meta, key) {
+  _parseChild(
+    object: VanillaInstance | any,
+    raw: any,
+    meta: VanillaMeta,
+    key: VanillaKey | null
+  ) {
     const value = raw[key];
     return typeof object.parse === "function"
       ? object.parse(value, key)
       : this.parse(value, meta, object, key);
   }
 
-  getClass(raw, parent, key) {
+  getClass(raw: any, parent: VanillaInstance, key: VanillaKey) {
     const WrapperClass =
+      // @ts-ignore
       parent && parent.getChildClass && parent.getChildClass(raw, key);
     if (WrapperClass) {
       return WrapperClass;

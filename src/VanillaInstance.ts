@@ -1,15 +1,32 @@
 import * as _ from "underscore";
+import { VanillaParser } from "./vanilla";
 
-const VanillaCommon = {
-  raw() {
+export type VanillaKey = string | number;
+export type VanillaMeta = any;
+export type VanillaClass = any;
+
+abstract class VanillaInstance {
+  _parser: VanillaParser;
+  _parent: VanillaInstance;
+  _key: VanillaKey;
+  _meta: VanillaMeta;
+
+  abstract _set(key: VanillaKey, value: any): VanillaInstance;
+  abstract _add(value: any): VanillaInstance;
+  abstract _remove(key: VanillaKey): VanillaInstance;
+
+  // getChildClass?: (raw: any, key: VanillaKey) => VanillaClass | null;
+
+  raw(): any {
     return JSON.parse(JSON.stringify(this));
-  },
+  }
 
-  equals(other) {
+  equals(other: VanillaInstance): boolean {
     return other === this || (other && _.isEqual(other.raw(), this.raw()));
-  },
+  }
 
-  clone() {
+  clone(): VanillaInstance {
+    // @ts-ignore
     return new this.constructor(
       this,
       this._parser,
@@ -17,12 +34,17 @@ const VanillaCommon = {
       this._key,
       this._meta
     );
-  },
-  parse(raw, key = null, WrapperClass = null) {
-    return this._parser.parse(raw, this._meta, this, key, WrapperClass);
-  },
+  }
 
-  parent() {
+  parse(
+    raw: any,
+    key: VanillaKey = null,
+    WrapperClass: VanillaClass = null
+  ): VanillaInstance {
+    return this._parser.parse(raw, this._meta, this, key, WrapperClass);
+  }
+
+  parent(): VanillaInstance | null {
     if (this._parent) {
       if (this.equals(this._parent[this._key])) {
         return this._parent;
@@ -31,23 +53,25 @@ const VanillaCommon = {
       }
     }
     return null;
-  },
-  root() {
+  }
+
+  root(): VanillaInstance {
     if (this._parent) {
       return this.parent().root();
     } else {
       return this;
     }
-  },
+  }
 
   // MUTATION METHODS
 
   // set(key, value): sets a child property
-  set(key, value) {
+  set(key: VanillaKey, value: any): VanillaInstance {
     return this._set(key, this.parse(value, key));
-  },
+  }
+
   // replace(value): replaces itself in parent
-  replace(value) {
+  replace(value: any): VanillaInstance {
     if (this._parent && this._key !== undefined) {
       return this._parent._set(
         this._key,
@@ -56,9 +80,10 @@ const VanillaCommon = {
     } else {
       throw new Error("Can't replace node without a parent");
     }
-  },
+  }
+
   // TODO: better name?
-  _replace(value) {
+  _replace(value: any): VanillaInstance {
     if (this._parent) {
       return this._parent.parse(value, this._key, this.constructor);
     } else {
@@ -70,30 +95,33 @@ const VanillaCommon = {
         this.constructor
       );
     }
-  },
+  }
+
   // add(value): adds child
-  add(value) {
+  add(value: any): VanillaInstance {
     return this._add(value);
-  },
+  }
+
   // remove(): removes from parent
   // remove(key): removes child
-  remove(...args) {
+  remove(...args: [] | [VanillaKey]): VanillaInstance {
     if (args.length === 0) {
       return this._parent._remove(this._key);
     } else if (args.length === 1) {
       const [key] = args;
       return this._remove(key);
     }
-  },
+  }
 
   // UTILS
-  private(key, value) {
+  private(key: string, value: any): void {
     // this prevents properties from being serialized
     Object.defineProperty(this, key, { value: value, enumerable: false });
-  },
-  freeze() {
+  }
+
+  freeze(): VanillaInstance {
     return Object.freeze(this);
   }
-};
+}
 
-export default VanillaCommon;
+export default VanillaInstance;

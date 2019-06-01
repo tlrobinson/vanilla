@@ -1,38 +1,71 @@
 import { VanillaParser, VanillaObject, VanillaArray } from "./vanilla";
+import VanillaInstance, { VanillaKey, VanillaClass } from "./VanillaInstance";
 import * as _ from "underscore";
 
-const MBQLCommon = {
-  metadata() {
+type Metadata = any;
+type MBQLMeta = { metadata: Metadata };
+
+interface MBQLInstance extends VanillaInstance {
+  parent(): MBQLInstance;
+  metadata(): Metadata;
+  query(): Query;
+  question(): Question;
+}
+
+class MBQLObject extends VanillaObject implements MBQLInstance {
+  // @ts-ignore
+  parent(): MBQLInstance {
+    // @ts-ignore
+    return super.parent();
+  }
+  metadata(): Metadata {
     return this._meta.metadata;
-  },
-  query() {
+  }
+  query(): Query {
     return this.parent().query();
-  },
-  question() {
+  }
+  question(): Question {
     return this.parent().question();
   }
-};
+}
 
-class MBQLObject extends VanillaObject {}
-Object.assign(MBQLObject.prototype, MBQLCommon);
+class MBQLArray extends VanillaArray implements MBQLInstance {
+  // @ts-ignore
+  parent(): MBQLInstance {
+    // @ts-ignore
+    return super.parent();
+  }
 
-class MBQLArray extends VanillaArray {}
-Object.assign(MBQLArray.prototype, MBQLCommon);
+  metadata(): Metadata {
+    return this._meta.metadata;
+  }
+  query(): Query {
+    return this.parent().query();
+  }
+  question(): Question {
+    return this.parent().question();
+  }
+}
 
 class MBQLNullableArray extends MBQLArray {
-  parent() {
+  parent(): MBQLInstance {
     if (this.length === 0) {
+      // @ts-ignore
       return this._parent.remove(this._key);
     } else if (this.length === 1) {
+      // @ts-ignore
       return this._parent.set(this._key, this);
     }
   }
 }
 class MBQLNullableObject extends MBQLObject {
-  parent() {
-    if (this.length === 0) {
+  parent(): MBQLInstance {
+    const keysCount = Object.keys(this).length;
+    if (keysCount === 0) {
+      // @ts-ignore
       return this._parent.remove(this._key);
-    } else if (this.length === 1) {
+    } else if (keysCount === 1) {
+      // @ts-ignore
       return this._parent.set(this._key, this);
     }
   }
@@ -43,7 +76,7 @@ class MBQLParser extends VanillaParser {
     super(MBQLObject, MBQLArray);
   }
 
-  getClass(mbql, parent, key) {
+  getClass(mbql, parent: MBQLInstance, key: VanillaKey) {
     if (Array.isArray(mbql) && typeof mbql[0] === "string") {
       if (MBQL_CLAUSES[mbql[0]]) {
         return MBQL_CLAUSES[mbql[0]];
@@ -52,11 +85,11 @@ class MBQLParser extends VanillaParser {
     return super.getClass(mbql, parent, key);
   }
 
-  parseQuery(query, meta) {
+  parseQuery(query, meta: MBQLMeta = null) {
     return this.parse(query, meta, null, null, Query);
   }
 
-  parseQuestion(question, meta) {
+  parseQuestion(question, meta: MBQLMeta = null) {
     return this.parse(question, meta, null, null, Question);
   }
 }
@@ -77,7 +110,9 @@ class Question extends MBQLObject {
 }
 
 class StructuredDatasetQuery extends MBQLObject {
-  getChildClass(raw, key) {
+  query: any;
+
+  getChildClass(raw: any, key: VanillaKey): VanillaClass | null {
     if (key === "query") {
       return Query;
     }
@@ -106,6 +141,11 @@ class StructuredDatasetQuery extends MBQLObject {
 class NativeDatasetQuery extends MBQLObject {}
 
 export class Query extends MBQLObject {
+  expressions: { [key: string]: any };
+  filter: any;
+  aggregation: any;
+  breakout: any;
+
   getChildClass(raw, key) {
     return QUERY_CLAUSES[key];
   }
@@ -191,12 +231,15 @@ QUERY_CLAUSES["order-by"] = class SortList extends MBQLNullableArray {};
 QUERY_CLAUSES["fields"] = class FieldList extends MBQLNullableArray {};
 
 class FilterList extends MBQLArray {
-  parent() {
+  parent(): MBQLInstance {
     if (this.length === 0) {
+      // @ts-ignore
       return this._parent.remove(this._key);
     } else if (this.length === 1) {
+      // @ts-ignore
       return this._parent.set(this._key, this[0]);
     } else {
+      // @ts-ignore
       return this._parent.set(this._key, ["and", ...this]);
     }
   }
@@ -204,11 +247,13 @@ class FilterList extends MBQLArray {
 
 // a "virtual" clause the converts an expression object into a
 class ExpressionList extends MBQLArray {
-  parent() {
+  parent(): MBQLInstance {
     if (this.length === 0) {
+      // @ts-ignore
       return this._parent.remove(this._key);
     } else {
       const expressions = _.object(this);
+      // @ts-ignore
       return this._parent.set(this._key, expressions);
     }
   }
@@ -358,7 +403,6 @@ MBQL_CLAUSES["="] = class Equals extends MBQLArray {};
 MBQL_CLAUSES["time-interval"] = class TimeInterval extends MBQLArray {};
 
 const MBQL = new MBQLParser();
-MBQL.CLAUSES = MBQL_CLAUSES;
-MBQL.QUERY_CLAUSES = QUERY_CLAUSES;
 
 export default MBQL;
+export { MBQL_CLAUSES, QUERY_CLAUSES };
