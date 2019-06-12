@@ -38,7 +38,7 @@ export default class VanillaParser {
     return raw;
   }
 
-  parseChildren(object, raw: any, meta: VanillaMeta) {
+  parseChildren(object: VanillaInstance | any, raw: any, meta: VanillaMeta) {
     if (Array.isArray(raw)) {
       for (let key = 0; key < raw.length; key++) {
         this.parseChild(object, raw, meta, key);
@@ -53,7 +53,12 @@ export default class VanillaParser {
     return object;
   }
 
-  parseChild(object: any, raw: any, meta: VanillaMeta, key: VanillaKey | null) {
+  parseChild(
+    object: VanillaInstance | any,
+    raw: any,
+    meta: VanillaMeta,
+    key: VanillaKey | null
+  ) {
     const parser = this;
     if (this._lazy) {
       let isParsed = false;

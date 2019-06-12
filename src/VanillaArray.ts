@@ -26,13 +26,14 @@ export default class VanillaArray extends Array implements VanillaInstance {
   remove: (...args: [] | [VanillaKey]) => VanillaInstance;
   private: (key: string, value: any) => void;
   freeze: () => VanillaInstance;
+  _safe: <K extends keyof this>(key: K) => this[K];
 
   constructor(
     raw: any,
     parser: VanillaParser,
-    parent: VanillaInstance,
-    key: VanillaKey,
-    meta: VanillaMeta
+    parent: VanillaInstance = null,
+    key: VanillaKey = null,
+    meta: VanillaMeta = null
   ) {
     if (typeof raw === "number") {
       super(raw);

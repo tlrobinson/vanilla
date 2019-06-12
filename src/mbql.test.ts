@@ -1,6 +1,9 @@
-import MBQL, { Query, MBQL_CLAUSES, QUERY_CLAUSES } from "./mbql";
+import MBQL, { MBQL_CLAUSES, Query, QUERY_CLAUSES } from "./mbql";
 
-const ORIGINAL_QUERY = { aggregation: [["sum", ["field-id", 1]]] };
+const ORIGINAL_QUERY = {
+  "source-table": 1,
+  aggregation: [["sum", ["field-id", 1]]]
+};
 
 const metadata = {
   fields: {
@@ -70,7 +73,10 @@ describe("MBQL Vanilla parser", () => {
       const q = MBQL.parseQuery(ORIGINAL_QUERY);
       const qq = q.aggregation[0].replace(["count"]).query();
       expect(qq.aggregation[0]).toBeInstanceOf(MBQL_CLAUSES["count"]);
-      expect(qq.raw()).toEqual({ aggregation: [["count"]] });
+      expect(qq.raw()).toEqual({
+        "source-table": 1,
+        aggregation: [["count"]]
+      });
     });
   });
 
@@ -83,7 +89,7 @@ describe("MBQL Vanilla parser", () => {
       });
     });
 
-    describe("filters()", () => {
+    describe("filtersList()", () => {
       let q1, q2, q3, q4;
       beforeAll(() => {
         q1 = MBQL.parseQuery({});
@@ -97,22 +103,22 @@ describe("MBQL Vanilla parser", () => {
       });
 
       it("should return a list of filters of correct length", () => {
-        expect(q1.filters()).toHaveLength(0);
-        expect(q2.filters()).toHaveLength(1);
-        expect(q3.filters()).toHaveLength(1);
-        expect(q4.filters()).toHaveLength(2);
+        expect(q1.filtersList()).toHaveLength(0);
+        expect(q2.filtersList()).toHaveLength(1);
+        expect(q3.filtersList()).toHaveLength(1);
+        expect(q4.filtersList()).toHaveLength(2);
       });
       it("should add new filter correctly", () => {
         expect(
           q1
-            .filters()
+            .filtersList()
             .add(["segment", 3])
             .query()
             .raw()
         ).toEqual({ filter: ["segment", 3] });
         expect(
           q2
-            .filters()
+            .filtersList()
             .add(["segment", 3])
             .query()
             .raw()
@@ -121,7 +127,7 @@ describe("MBQL Vanilla parser", () => {
         });
         expect(
           q3
-            .filters()
+            .filtersList()
             .add(["segment", 3])
             .query()
             .raw()
@@ -130,7 +136,7 @@ describe("MBQL Vanilla parser", () => {
         });
         expect(
           q4
-            .filters()
+            .filtersList()
             .add(["segment", 3])
             .query()
             .raw()
@@ -141,7 +147,7 @@ describe("MBQL Vanilla parser", () => {
       it("should replace filter correctly", () => {
         expect(
           q2
-            .filters()[0]
+            .filtersList()[0]
             .replace(["segment", 3])
             .query()
             .raw()
@@ -150,7 +156,7 @@ describe("MBQL Vanilla parser", () => {
         });
         expect(
           q3
-            .filters()[0]
+            .filtersList()[0]
             .replace(["segment", 3])
             .query()
             .raw()
@@ -159,7 +165,7 @@ describe("MBQL Vanilla parser", () => {
         });
         expect(
           q4
-            .filters()[0]
+            .filtersList()[0]
             .replace(["segment", 3])
             .query()
             .raw()
@@ -168,7 +174,7 @@ describe("MBQL Vanilla parser", () => {
         });
         expect(
           q4
-            .filters()[1]
+            .filtersList()[1]
             .replace(["segment", 3])
             .query()
             .raw()
@@ -178,65 +184,65 @@ describe("MBQL Vanilla parser", () => {
       });
     });
 
-    describe("aggregations()", () => {
+    describe("aggregationsList()", () => {
       it("should add and remove correctly", () => {
         const q1 = MBQL.parseQuery({});
-        expect(q1.aggregations()).toHaveLength(0);
+        expect(q1.aggregationsList()).toHaveLength(0);
         expect(q1.raw()).toEqual({});
         const q2 = q1
-          .aggregations()
+          .aggregationsList()
           .add(["count"])
           .query();
-        expect(q2.aggregations()).toHaveLength(1);
-        expect(q2.aggregations()[0]).toBeInstanceOf(MBQL_CLAUSES["count"]);
+        expect(q2.aggregationsList()).toHaveLength(1);
+        expect(q2.aggregationsList()[0]).toBeInstanceOf(MBQL_CLAUSES["count"]);
         expect(q2.raw()).toEqual({ aggregation: [["count"]] });
         const q3 = q2
-          .aggregations()[0]
+          .aggregationsList()[0]
           .remove()
           .query();
-        expect(q3.aggregations()).toHaveLength(0);
+        expect(q3.aggregationsList()).toHaveLength(0);
         expect(q3.raw()).toEqual({});
       });
     });
 
-    describe("breakouts()", () => {
+    describe("breakoutsList()", () => {
       it("should add and remove correctly", () => {
         const q1 = MBQL.parseQuery({});
-        expect(q1.breakouts()).toHaveLength(0);
+        expect(q1.breakoutsList()).toHaveLength(0);
         expect(q1.raw()).toEqual({});
         const q2 = q1
-          .breakouts()
+          .breakoutsList()
           .add(["field-id", 1])
           .query();
-        expect(q2.breakouts()).toHaveLength(1);
-        expect(q2.breakouts()[0]).toBeInstanceOf(MBQL_CLAUSES["field-id"]);
+        expect(q2.breakoutsList()).toHaveLength(1);
+        expect(q2.breakoutsList()[0]).toBeInstanceOf(MBQL_CLAUSES["field-id"]);
         expect(q2.raw()).toEqual({ breakout: [["field-id", 1]] });
         const q3 = q2
-          .breakouts()[0]
+          .breakoutsList()[0]
           .remove()
           .query();
-        expect(q3.breakouts()).toHaveLength(0);
+        expect(q3.breakoutsList()).toHaveLength(0);
         expect(q3.raw()).toEqual({});
       });
     });
 
-    describe("sorts()", () => {
+    describe("sortsList()", () => {
       it("should add and remove correctly", () => {
         const q1 = MBQL.parseQuery({});
-        expect(q1.sorts()).toHaveLength(0);
+        expect(q1.sortsList()).toHaveLength(0);
         expect(q1.raw()).toEqual({});
         const q2 = q1
-          .sorts()
+          .sortsList()
           .add(["asc", ["aggregation", 0]])
           .query();
-        expect(q2.sorts()).toHaveLength(1);
-        expect(q2.sorts()[0]).toBeInstanceOf(MBQL_CLAUSES["asc"]);
+        expect(q2.sortsList()).toHaveLength(1);
+        expect(q2.sortsList()[0]).toBeInstanceOf(MBQL_CLAUSES["asc"]);
         expect(q2.raw()).toEqual({ "order-by": [["asc", ["aggregation", 0]]] });
         const q3 = q2
-          .sorts()[0]
+          .sortsList()[0]
           .remove()
           .query();
-        expect(q3.sorts()).toHaveLength(0);
+        expect(q3.sortsList()).toHaveLength(0);
         expect(q3.raw()).toEqual({});
       });
     });
@@ -262,7 +268,7 @@ describe("MBQL Vanilla parser", () => {
     });
   });
 
-  describe("nested queries", () => {
+  fdescribe("nested queries", () => {
     let q;
     beforeAll(() => {
       q = MBQL.parseQuery(
@@ -283,7 +289,7 @@ describe("MBQL Vanilla parser", () => {
       const queries = q.queries();
       expect(queries).toHaveLength(3);
       expect(queries[0]["source-table"]).toBe(1);
-      expect(queries.map(q => q.filters().length)).toEqual([2, 1, 0]);
+      expect(queries.map(q => q.filtersList().length)).toEqual([2, 1, 0]);
     });
 
     it("rootQuery", () => {

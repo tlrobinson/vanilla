@@ -38,7 +38,7 @@ abstract class VanillaInstance {
 
   parse(
     raw: any,
-    key: VanillaKey = null,
+    key: VanillaKey | null = null,
     WrapperClass: VanillaClass = null
   ): VanillaInstance {
     return this._parser.parse(raw, this._meta, this, key, WrapperClass);
@@ -78,7 +78,7 @@ abstract class VanillaInstance {
         this._parent.parse(value, this._key, this.constructor)
       );
     } else {
-      throw new Error("Can't replace node without a parent");
+      throw new Error("Can't replace node without a parent and key");
     }
   }
 
@@ -121,6 +121,12 @@ abstract class VanillaInstance {
 
   freeze(): VanillaInstance {
     return Object.freeze(this);
+  }
+
+  // method for typesafe accessing of properties by key.
+  // foo.bar is typechecked but foo["bar"] isn't?
+  _safe<K extends keyof this>(key: K): this[K] {
+    return this[key];
   }
 }
 

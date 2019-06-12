@@ -2,7 +2,26 @@ import { VanillaParser, VanillaObject, VanillaArray } from "./vanilla";
 import VanillaInstance, { VanillaKey, VanillaClass } from "./VanillaInstance";
 import * as _ from "underscore";
 
+import {
+  IQuery,
+  IQueryBase,
+  ILocalFieldReference,
+  IFieldLiteralReference,
+  IForeignFieldReference
+} from "./mbql-schema";
+import { number } from "io-ts";
+
 type Metadata = any;
+
+type DatabaseId = number;
+type TableId = number;
+type FieldId = number;
+type SegmentId = number;
+type MetricId = number;
+
+type ColumnName = string;
+type BaseType = string;
+
 type MBQLMeta = { metadata: Metadata };
 
 interface MBQLInstance extends VanillaInstance {
@@ -47,7 +66,7 @@ class MBQLArray extends VanillaArray implements MBQLInstance {
   }
 }
 
-class MBQLNullableArray extends MBQLArray {
+class MBQLNullableArray<T> extends MBQLArray {
   parent(): MBQLInstance {
     if (this.length === 0) {
       // @ts-ignore
@@ -86,7 +105,7 @@ class MBQLParser extends VanillaParser {
   }
 
   parseQuery(query, meta: MBQLMeta = null) {
-    return this.parse(query, meta, null, null, Query);
+    return this.parse(query, meta, null, null, getQueryClass(query));
   }
 
   parseQuestion(question, meta: MBQLMeta = null) {
@@ -94,7 +113,11 @@ class MBQLParser extends VanillaParser {
   }
 }
 
+type DatasetQuery = StructuredDatasetQuery | NativeDatasetQuery;
+
 class Question extends MBQLObject {
+  dataset_query: DatasetQuery;
+
   getChildClass(raw, key) {
     if (key === "dataset_query") {
       if (raw.type === "native") {
@@ -109,12 +132,21 @@ class Question extends MBQLObject {
   }
 }
 
+function getQueryClass(raw) {
+  if ("source-query" in raw) {
+    return QuerySourceQuery;
+  } else {
+    return QueryTableQuery;
+  }
+}
+
 class StructuredDatasetQuery extends MBQLObject {
-  query: any;
+  // @ts-ignore: MBQL object has a "query" property we're overriding
+  query: Query;
 
   getChildClass(raw: any, key: VanillaKey): VanillaClass | null {
     if (key === "query") {
-      return Query;
+      return getQueryClass(raw);
     }
   }
 
@@ -122,29 +154,34 @@ class StructuredDatasetQuery extends MBQLObject {
     return this.query.expressionList();
   }
   filters() {
-    return this.query.filters();
+    return this.query.filtersList();
   }
   aggregations() {
-    return this.query.aggregations();
+    return this.query.aggregationsList();
   }
   breakouts() {
-    return this.query.breakouts();
+    return this.query.breakoutsList();
   }
   sorts() {
-    return this.query.sorts();
+    return this.query.sortsList();
   }
   fields() {
-    return this.query.fields();
+    return this.query.fieldsList();
   }
 }
 
 class NativeDatasetQuery extends MBQLObject {}
 
-export class Query extends MBQLObject {
-  expressions: { [key: string]: any };
-  filter: any;
-  aggregation: any;
-  breakout: any;
+type Filter = any;
+
+export abstract class Query extends MBQLObject implements IQueryBase {
+  "joins": JoinList;
+  "expressions": ExpressionObject;
+  "filter": Filter;
+  "aggregation": AggregationList;
+  "breakout": BreakoutList;
+  "fields": FieldList;
+  "order-by": SortList;
 
   getChildClass(raw, key) {
     return QUERY_CLAUSES[key];
@@ -159,7 +196,7 @@ export class Query extends MBQLObject {
       : [];
     return this.parse(expressions, "expressions", ExpressionList);
   }
-  filters() {
+  filtersList() {
     const filters = !this.filter
       ? []
       : this.filter[0] === "and"
@@ -167,26 +204,20 @@ export class Query extends MBQLObject {
       : [this.filter];
     return this.parse(filters, "filter", FilterList);
   }
-  aggregations() {
+  aggregationsList() {
     return this.aggregation || this.parse([], "aggregation");
   }
-  breakouts() {
+  breakoutsList() {
     return this.breakout || this.parse([], "breakout");
   }
-  sorts() {
-    return this["order-by"] || this.parse([], "order-by");
+  sortsList() {
+    return this._safe("order-by") || this.parse([], "order-by");
   }
-  fields() {
+  fieldsList() {
     return this.fields || this.parse([], "fields");
   }
 
-  table() {
-    if (this["source-table"]) {
-      return this.metadata().table(this["source-table"]);
-    } else if (this["source-query"]) {
-      throw "nyi";
-    }
-  }
+  abstract table();
 
   sourceTable() {
     return this.rootQuery().table();
@@ -201,34 +232,122 @@ export class Query extends MBQLObject {
     return query;
   }
 
-  sourceQuery() {
-    return this["source-query"];
-  }
+  abstract sourceQuery();
 
   queries() {
     const stages = [];
-    for (let query = this; query; query = query.sourceQuery()) {
+    for (let query: Query = this; query; query = query.sourceQuery()) {
       stages.unshift(query);
     }
     return stages;
   }
 }
 
-const QUERY_CLAUSES = {};
+class QuerySourceQuery extends Query {
+  "source-query": Query;
 
-QUERY_CLAUSES["source-query"] = class SourceQuery extends Query {
-  parentQuery() {
-    return this.parent();
+  getChildClass(raw: any, key: VanillaKey): VanillaClass | null {
+    if (key === "source-query") {
+      return getQueryClass(raw);
+    }
   }
-};
 
-QUERY_CLAUSES["expressions"] = Object; // objects that can have arbitrary keys must not have additional methods
-QUERY_CLAUSES[
-  "aggregation"
-] = class AggregationList extends MBQLNullableArray {};
-QUERY_CLAUSES["breakout"] = class BreakoutList extends MBQLNullableArray {};
-QUERY_CLAUSES["order-by"] = class SortList extends MBQLNullableArray {};
-QUERY_CLAUSES["fields"] = class FieldList extends MBQLNullableArray {};
+  table() {
+    throw "nyi";
+  }
+  sourceQuery() {
+    return this._safe("source-query");
+  }
+}
+
+class QueryTableQuery extends Query {
+  "source-table": TableId;
+
+  table() {
+    return this.metadata().table(this._safe("source-table"));
+  }
+  sourceQuery() {
+    return null;
+  }
+}
+
+const QUERY_CLAUSES = {};
+function query(name) {
+  return function(target) {
+    QUERY_CLAUSES[name] = target;
+    return target;
+  };
+}
+
+// type Aggregation =
+//   | Count
+//   | Sum
+//   | Average
+//   | CumulativeCount
+//   | CumulativeSum
+//   | Min
+//   | Max;
+type Breakout = ConcreteFieldReference | DateTimeField | BinningStrategy;
+
+interface Sort {
+  0: SortAscending | SortDescending;
+  1:
+    | FieldId
+    | FieldLiteralReference
+    | DateTimeField
+    | BinningStrategy
+    | AggregateFieldReference;
+}
+
+type ConcreteFieldReference =
+  | LocalFieldReference
+  | ForeignFieldReference
+  | FieldLiteralReference
+  | ExpressionReference;
+type Field = ConcreteFieldReference | AggregateFieldReference;
+
+type JoinType = "left-join" | "right-join" | "inner-join" | "full-join";
+
+class Join extends MBQLObject {
+  "source-table": TableId;
+  "source-query": Query;
+
+  "alias": string;
+  "strategy": JoinType;
+  "condition": Filter;
+  "fields": "none" | "all" | ConcreteFieldReference[];
+
+  getChildClass(raw: any, key: VanillaKey): VanillaClass | null {
+    if (key === "source-query") {
+      return getQueryClass(raw);
+    }
+  }
+}
+
+// @query("source-query")
+// class SourceQuery extends Query {
+//   parentQuery() {
+//     return this.parent();
+//   }
+// }
+
+@query("joins")
+class JoinList extends MBQLNullableArray<Join> {}
+
+@query("expressions")
+class ExpressionObject {
+  [key: string]: Expression;
+}
+@query("aggregation")
+class AggregationList extends MBQLNullableArray<
+  Aggregation | NamedAggregation
+> {}
+@query("breakout")
+class BreakoutList extends MBQLNullableArray<Breakout> {}
+@query("order-by")
+class SortList extends MBQLNullableArray<Sort> {}
+@query("fields")
+class FieldList extends MBQLNullableArray<Field> {}
 
 class FilterList extends MBQLArray {
   parent(): MBQLInstance {
@@ -245,7 +364,7 @@ class FilterList extends MBQLArray {
   }
 }
 
-// a "virtual" clause the converts an expression object into a
+// a "virtual" clause the converts an expression object into an array of ExpressionEntry's
 class ExpressionList extends MBQLArray {
   parent(): MBQLInstance {
     if (this.length === 0) {
@@ -258,12 +377,19 @@ class ExpressionList extends MBQLArray {
     }
   }
   getChildClass() {
-    return Expression;
+    return ExpressionEntry;
   }
 }
 
+type ExpressionName = string;
+type ExpressionOperator = Add | Subtract | Multiply | Divide;
+type Expression = ExpressionOperator | ConcreteFieldReference;
+
 // this is used by ExpressionList, not an actual MBQL clause
-class Expression extends MBQLArray {
+class ExpressionEntry extends MBQLArray {
+  0: ExpressionName;
+  1: Expression;
+
   displayName() {
     return this.name();
   }
@@ -277,7 +403,24 @@ class Expression extends MBQLArray {
 
 const MBQL_CLAUSES = {};
 
-MBQL_CLAUSES["field-id"] = class FieldId extends MBQLArray {
+function mbql<T = any>(name) {
+  return function(target) {
+    MBQL_CLAUSES[name] = target;
+    return target;
+  };
+}
+
+// This class is necessary because MBQL clauses are typed as tuples instead of arrays
+// Without it you'll see errors like "Types of property 'length' are incompatible. Type 'number' is not assignable to type '2'.""
+class MBQLTuple extends MBQLArray {
+  length: any;
+}
+
+@mbql("field-id")
+class LocalFieldReference extends MBQLTuple implements ILocalFieldReference {
+  0: "field-id";
+  1: FieldId;
+
   displayName() {
     return this.field().displayName();
   }
@@ -287,8 +430,27 @@ MBQL_CLAUSES["field-id"] = class FieldId extends MBQLArray {
   fieldId() {
     return this[1];
   }
-};
-MBQL_CLAUSES["fk->"] = class FkField extends MBQLArray {
+}
+
+@mbql("field-literal")
+class FieldLiteralReference extends MBQLTuple
+  implements IFieldLiteralReference {
+  0: "field-literal";
+  1: ColumnName;
+  2: BaseType;
+
+  displayName() {
+    return this[0]; // FIXME
+  }
+}
+
+@mbql("fk->")
+class ForeignFieldReference extends MBQLTuple
+  implements IForeignFieldReference {
+  0: "fk->";
+  1: LocalFieldReference;
+  2: LocalFieldReference;
+
   displayName() {
     return `${this.foreignKeyDimension().displayName()} → ${this.targetDimension().displayName()}`;
   }
@@ -298,11 +460,18 @@ MBQL_CLAUSES["fk->"] = class FkField extends MBQLArray {
   targetDimension() {
     return this[2];
   }
-};
+}
 
-MBQL_CLAUSES["datetime-field"] = class DateTimeField extends MBQLArray {
+type DateTimeUnit = string; // TODO
+
+@mbql("datetime-field")
+class DateTimeField extends MBQLArray {
+  0: "datetime-field";
+  1: LocalFieldReference | ForeignFieldReference;
+  2: DateTimeUnit;
+
   displayName() {
-    return `${this.dimension().displayName()}: ${formatUnit(this.unit())}`;
+    return `${this.dimension().displayName()}: ${this.unitDisplayName()}`;
   }
   dimension() {
     return this[1];
@@ -310,12 +479,20 @@ MBQL_CLAUSES["datetime-field"] = class DateTimeField extends MBQLArray {
   unit() {
     return this[2];
   }
-};
+  unitDisplayName() {
+    return formatUnit(this.unit());
+  }
+}
 function formatUnit(unit) {
   return unit && unit.charAt(0).toUpperCase() + unit.slice(1).replace("-", " ");
 }
 
-MBQL_CLAUSES["binning-strategy"] = class BinningStrategy extends MBQLArray {
+@mbql("binning-strategy")
+class BinningStrategy extends MBQLArray {
+  0: "binning-strategy";
+  1: ConcreteFieldReference;
+  2: string; // TODO
+
   displayName() {
     return `${this.dimension().displayName()}: ${this.strategy()}`;
   }
@@ -325,34 +502,60 @@ MBQL_CLAUSES["binning-strategy"] = class BinningStrategy extends MBQLArray {
   strategy() {
     return this[2];
   }
-};
-MBQL_CLAUSES["aggregation"] = class AggregationReference extends MBQLArray {
+}
+
+@mbql("aggregation")
+class AggregateFieldReference extends MBQLArray {
+  0: "aggregation";
+  1: number;
   displayName() {
     return this.aggregation().displayName();
   }
   aggregation() {
     return this.query().aggregation[this[1]];
   }
-};
+}
 
-MBQL_CLAUSES["asc"] = class SortAscending extends MBQLArray {
+@mbql("expression")
+class ExpressionReference extends MBQLArray {
+  0: "expression";
+  1: ExpressionName;
   displayName() {
-    return `${this.dimension().displayName()}: Ascending`;
+    return this[1];
   }
+}
+
+abstract class SortClause extends MBQLArray {
+  0: "asc" | "desc";
+  1: Field;
   dimension() {
     return this[1];
   }
-};
-MBQL_CLAUSES["desc"] = class SortDescending extends MBQLArray {
   displayName() {
-    return `${this.dimension().displayName()}: Descending`;
+    return `${this.dimension().displayName()}: ${this.directionName()}`;
   }
-  dimension() {
-    return this[1];
+  abstract directionName();
+}
+@mbql("asc")
+class SortAscending extends SortClause {
+  0: "asc";
+  directionName() {
+    return "Ascending";
   }
-};
+}
+@mbql("desc")
+class SortDescending extends SortClause {
+  0: "desc";
+  directionName() {
+    return `Descending`;
+  }
+}
 
-MBQL_CLAUSES["metric"] = class Metric extends MBQLArray {
+@mbql("metric")
+class Metric extends MBQLArray {
+  0: "metric";
+  1: MetricId;
+
   displayName() {
     return this.metric().displayName();
   }
@@ -362,8 +565,13 @@ MBQL_CLAUSES["metric"] = class Metric extends MBQLArray {
   metricId() {
     return this[1];
   }
-};
-MBQL_CLAUSES["segment"] = class Segment extends MBQLArray {
+}
+
+@mbql("segment")
+class Segment extends MBQLArray {
+  0: "segment";
+  1: SegmentId;
+
   displayName() {
     return this.segment().displayName();
   }
@@ -373,34 +581,140 @@ MBQL_CLAUSES["segment"] = class Segment extends MBQLArray {
   segmentId() {
     return this[1];
   }
-};
+}
 
-MBQL_CLAUSES["and"] = class AndFilter extends MBQLArray {};
-MBQL_CLAUSES["or"] = class OrFilter extends MBQLArray {};
-MBQL_CLAUSES["not"] = class NotFilter extends MBQLArray {};
+@mbql("and")
+class AndFilter extends MBQLArray {
+  0: "and";
+  1: Filter;
+  2: Filter;
+}
+@mbql("or")
+class OrFilter extends MBQLArray {
+  0: "or";
+  1: Filter;
+  2: Filter;
+}
+@mbql("not")
+class NotFilter extends MBQLArray {
+  0: "not";
+  1: Filter;
+}
 
-MBQL_CLAUSES["count"] = class Count extends MBQLArray {
-  displayName() {
-    return "Count";
-  }
-};
-MBQL_CLAUSES["sum"] = class Sum extends MBQLArray {
-  displayName() {
-    return `Sum of ${this.dimension().displayName()}`;
-  }
+// AGGREGATIONS
+
+abstract class FieldAggregation extends MBQLArray {
+  0: string;
+  1: ConcreteFieldReference;
   dimension() {
     return this[1];
   }
-};
+  displayName() {
+    return `${this.aggregationName()} of ${this.dimension().displayName()}`;
+  }
+  abstract aggregationName();
+}
 
-MBQL_CLAUSES["named"] = class Named extends MBQLArray {
+@mbql("count")
+class Count extends MBQLArray {
+  displayName() {
+    return "Count";
+  }
+}
+@mbql("sum")
+class Sum extends FieldAggregation {
+  0: "sum";
+  aggregationName() {
+    return `Sum`;
+  }
+}
+@mbql("avg")
+class Average extends FieldAggregation {
+  0: "avg";
+  static "aggregationName" = `Average`;
+  aggregationName() {
+    return `Average`;
+  }
+}
+@mbql("cum-count")
+class CumulativeCount extends FieldAggregation {
+  0: "cum-count";
+  aggregationName() {
+    return `Cumulative count`;
+  }
+}
+@mbql("cum-sum")
+class CumulativeSum extends FieldAggregation {
+  0: "sum-sum";
+  aggregationName() {
+    return `Cumulative sum`;
+  }
+}
+@mbql("min")
+class Min extends FieldAggregation {
+  0: "min";
+  aggregationName() {
+    return `Minimum`;
+  }
+}
+@mbql("max")
+class Max extends FieldAggregation {
+  0: "max";
+  aggregationName() {
+    return `Maximum`;
+  }
+}
+
+class Aggregation extends MBQLArray {}
+
+@mbql("named")
+class NamedAggregation extends Aggregation {
+  0: "named";
+  1: Aggregation;
+  2: string;
+
   displayName() {
     return this[2];
   }
-};
+}
 
-MBQL_CLAUSES["="] = class Equals extends MBQLArray {};
-MBQL_CLAUSES["time-interval"] = class TimeInterval extends MBQLArray {};
+type Value = number | string | null;
+
+// FILTER OPERATORS
+@mbql("=")
+class Equals extends MBQLArray {
+  0: "=";
+  1: ConcreteFieldReference;
+  2: Value;
+}
+@mbql("time-interval")
+class TimeInterval extends MBQLArray {
+  0: "time-interval";
+}
+
+// EXPRESSION OPERATORS
+abstract class BinaryFieldOperator extends MBQLArray {
+  0: "+" | "-" | "*" | "/";
+  1: Expression;
+  2: Expression;
+}
+
+@mbql("+")
+class Add extends BinaryFieldOperator {
+  0: "+";
+}
+@mbql("-")
+class Subtract extends BinaryFieldOperator {
+  0: "-";
+}
+@mbql("*")
+class Multiply extends BinaryFieldOperator {
+  0: "*";
+}
+@mbql("/")
+class Divide extends BinaryFieldOperator {
+  0: "/";
+}
 
 const MBQL = new MBQLParser();
 

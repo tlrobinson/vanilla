@@ -5,8 +5,8 @@ export default class VanillaObject extends VanillaInstance {
   constructor(
     raw: any,
     parser: VanillaParser,
-    parent: VanillaInstance,
-    key: VanillaKey,
+    parent: VanillaInstance = null,
+    key: VanillaKey = null,
     meta: VanillaMeta = null
   ) {
     super();
