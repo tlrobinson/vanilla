@@ -30,10 +30,10 @@ export default class VanillaParser {
     key: VanillaKey = null,
     WrapperClass: VanillaClass = null
   ) {
-    if (typeof raw === "object" && raw != null) {
+    if (raw && typeof raw === "object") {
       WrapperClass = WrapperClass || this.getClass(raw, parent, key);
-      const object = new WrapperClass(null, this, parent, key, meta);
-      return Object.freeze(this.parseChildren(object, raw, meta));
+      const object = new WrapperClass(raw, this, parent, key, meta);
+      return Object.freeze(object);
     }
     return raw;
   }

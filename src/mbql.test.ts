@@ -1,8 +1,21 @@
-import MBQL, { MBQL_CLAUSES, Query, QUERY_CLAUSES } from "./mbql";
+import MBQL, {
+  MBQL_CLAUSES,
+  Question,
+  Query,
+  QUERY_CLAUSES,
+  StructuredDatasetQuery
+} from "./mbql";
 
 const ORIGINAL_QUERY = {
   "source-table": 1,
   aggregation: [["sum", ["field-id", 1]]]
+};
+
+const ORIGINAL_QUESTION = {
+  dataset_query: {
+    type: "query",
+    query: ORIGINAL_QUERY
+  }
 };
 
 const metadata = {
@@ -18,6 +31,21 @@ const metadata = {
 };
 
 describe("MBQL Vanilla parser", () => {
+  describe("Question", () => {
+    it("should parse via constructor", () => {
+      const q = new Question(ORIGINAL_QUESTION);
+      expect(q).toBeInstanceOf(Question);
+      expect(q.dataset_query).toBeInstanceOf(StructuredDatasetQuery);
+      expect(q.dataset_query.query).toBeInstanceOf(Query);
+    });
+    it("should parse via parseQuestion", () => {
+      const q = MBQL.parseQuestion(ORIGINAL_QUESTION);
+      expect(q).toBeInstanceOf(Question);
+      expect(q.dataset_query).toBeInstanceOf(StructuredDatasetQuery);
+      expect(q.dataset_query.query).toBeInstanceOf(Query);
+    });
+  });
+
   describe("displayName", () => {
     it("should format `datetime-field` with `fk->`", () => {
       const f = MBQL.parse(
@@ -268,7 +296,7 @@ describe("MBQL Vanilla parser", () => {
     });
   });
 
-  fdescribe("nested queries", () => {
+  describe("nested queries", () => {
     let q;
     beforeAll(() => {
       q = MBQL.parseQuery(

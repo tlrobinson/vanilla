@@ -28,24 +28,26 @@ export default class VanillaArray extends Array implements VanillaInstance {
   freeze: () => VanillaInstance;
   _safe: <K extends keyof this>(key: K) => this[K];
 
+  static getDefaultParser() {
+    return new VanillaParser();
+  }
+
   constructor(
     raw: any,
-    parser: VanillaParser,
+    parser: VanillaParser = null,
     parent: VanillaInstance = null,
     key: VanillaKey = null,
     meta: VanillaMeta = null
   ) {
-    if (typeof raw === "number") {
-      super(raw);
-    } else {
-      super(raw ? raw.length : 0);
-      Object.assign(this, raw);
-    }
+    super();
+
     Object.setPrototypeOf(this, new.target.prototype);
-    this.private("_parser", parser);
+    this.private("_parser", parser || new.target.getDefaultParser());
     this.private("_parent", parent);
     this.private("_key", key);
     this.private("_meta", meta);
+
+    this._parser.parseChildren(this, raw, meta);
   }
 
   _set(key: number, value: any): VanillaInstance {

@@ -32,6 +32,10 @@ interface MBQLInstance extends VanillaInstance {
 }
 
 class MBQLObject extends VanillaObject implements MBQLInstance {
+  static getDefaultParser() {
+    return MBQL;
+  }
+
   // @ts-ignore
   parent(): MBQLInstance {
     // @ts-ignore
@@ -49,6 +53,9 @@ class MBQLObject extends VanillaObject implements MBQLInstance {
 }
 
 class MBQLArray extends VanillaArray implements MBQLInstance {
+  static getDefaultParser() {
+    return MBQL;
+  }
   // @ts-ignore
   parent(): MBQLInstance {
     // @ts-ignore
@@ -66,6 +73,12 @@ class MBQLArray extends VanillaArray implements MBQLInstance {
   }
 }
 
+// This class is necessary because MBQL clauses are typed as tuples instead of arrays
+// Without it you'll see errors like "Types of property 'length' are incompatible. Type 'number' is not assignable to type '2'.""
+class MBQLTuple extends MBQLArray {
+  length: any;
+}
+
 class MBQLNullableArray<T> extends MBQLArray {
   parent(): MBQLInstance {
     if (this.length === 0) {
@@ -77,7 +90,7 @@ class MBQLNullableArray<T> extends MBQLArray {
     }
   }
 }
-class MBQLNullableObject extends MBQLObject {
+class MBQLNullableObject<T> extends MBQLObject {
   parent(): MBQLInstance {
     const keysCount = Object.keys(this).length;
     if (keysCount === 0) {
@@ -113,9 +126,9 @@ class MBQLParser extends VanillaParser {
   }
 }
 
-type DatasetQuery = StructuredDatasetQuery | NativeDatasetQuery;
+export type DatasetQuery = StructuredDatasetQuery | NativeDatasetQuery;
 
-class Question extends MBQLObject {
+export class Question extends MBQLObject {
   dataset_query: DatasetQuery;
 
   getChildClass(raw, key) {
@@ -140,7 +153,7 @@ function getQueryClass(raw) {
   }
 }
 
-class StructuredDatasetQuery extends MBQLObject {
+export class StructuredDatasetQuery extends MBQLObject {
   // @ts-ignore: MBQL object has a "query" property we're overriding
   query: Query;
 
@@ -335,8 +348,11 @@ class Join extends MBQLObject {
 class JoinList extends MBQLNullableArray<Join> {}
 
 @query("expressions")
-class ExpressionObject {
-  [key: string]: Expression;
+class ExpressionObject extends MBQLNullableObject<Expression> {
+  // [key: string]: Expression;
+  // constructor(object: { [key: string]: Expression }) {
+  //   Object.assign(this, object);
+  // }
 }
 @query("aggregation")
 class AggregationList extends MBQLNullableArray<
@@ -371,9 +387,8 @@ class ExpressionList extends MBQLArray {
       // @ts-ignore
       return this._parent.remove(this._key);
     } else {
-      const expressions = _.object(this);
       // @ts-ignore
-      return this._parent.set(this._key, expressions);
+      return this._parent.set(this._key, _.object(this));
     }
   }
   getChildClass() {
@@ -408,12 +423,6 @@ function mbql<T = any>(name) {
     MBQL_CLAUSES[name] = target;
     return target;
   };
-}
-
-// This class is necessary because MBQL clauses are typed as tuples instead of arrays
-// Without it you'll see errors like "Types of property 'length' are incompatible. Type 'number' is not assignable to type '2'.""
-class MBQLTuple extends MBQLArray {
-  length: any;
 }
 
 @mbql("field-id")

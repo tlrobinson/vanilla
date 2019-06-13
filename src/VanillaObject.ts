@@ -2,19 +2,25 @@ import VanillaInstance, { VanillaKey, VanillaMeta } from "./VanillaInstance";
 import VanillaParser from "./VanillaParser";
 
 export default class VanillaObject extends VanillaInstance {
+  static getDefaultParser() {
+    return new VanillaParser();
+  }
+
   constructor(
     raw: any,
-    parser: VanillaParser,
+    parser: VanillaParser = null,
     parent: VanillaInstance = null,
     key: VanillaKey = null,
     meta: VanillaMeta = null
   ) {
     super();
-    Object.assign(this, raw);
-    this.private("_parser", parser);
+
+    this.private("_parser", parser || new.target.getDefaultParser());
     this.private("_parent", parent);
     this.private("_key", key);
     this.private("_meta", meta);
+
+    return this._parser.parseChildren(this, raw, meta);
   }
 
   _set(key: VanillaKey, value: any) {
