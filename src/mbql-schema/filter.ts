@@ -9,22 +9,22 @@ import {
   Field
 } from "./field";
 
-type AndFilter = any;
-const AndFilter: t.Type<AndFilter> = t.recursion("AndFilter", () =>
+export type AndFilter = any;
+export const AndFilter: t.Type<AndFilter> = t.recursion("AndFilter", () =>
   t.tuple([t.literal("and"), Filter, Filter])
 );
 
-type OrFilter = any;
-const OrFilter: t.Type<OrFilter> = t.recursion("OrFilter", () =>
+export type OrFilter = any;
+export const OrFilter: t.Type<OrFilter> = t.recursion("OrFilter", () =>
   t.tuple([t.literal("or"), Filter, Filter])
 );
 
-type NotFilter = any;
-const NotFilter: t.Type<NotFilter> = t.recursion("NotFilter", () =>
+export type NotFilter = any;
+export const NotFilter: t.Type<NotFilter> = t.recursion("NotFilter", () =>
   t.tuple([t.literal("not"), Filter])
 );
 
-const TimeIntervalFilter = t.tuple([
+export const TimeIntervalFilter = t.tuple([
   t.literal("time-interval"),
   t.union([
     LocalFieldReference,
@@ -42,22 +42,22 @@ const TimeIntervalFilter = t.tuple([
   // // FIXME: TimeIntervalOptions
 ]);
 
-const RelativeDatetime = t.union([
+export const RelativeDatetime = t.union([
   t.tuple([t.literal("relative-datetime"), t.literal("current")]),
   t.tuple([t.literal("relative-datetime"), t.number, RelativeDatetimeUnit])
 ]);
 
-const FieldOrRelativeDatetime = t.union([Field, RelativeDatetime]);
+export const FieldOrRelativeDatetime = t.union([Field, RelativeDatetime]);
 
-const DatetimeLiteral = t.string;
-const EqualityComparible = t.union([
+export const DatetimeLiteral = t.string;
+export const EqualityComparible = t.union([
   t.boolean,
   t.number,
   t.string,
   DatetimeLiteral,
   FieldOrRelativeDatetime
 ]);
-const OrderComparible = t.union([
+export const OrderComparible = t.union([
   t.number,
   t.string,
   DatetimeLiteral,
@@ -93,9 +93,9 @@ export const BetweenFilter = t.tuple([
   OrderComparible
 ]);
 
-const StringOrField = t.union([t.string, Field]);
+export const StringOrField = t.union([t.string, Field]);
 
-const StringFilterOptions = t.any; // FIXME
+export const StringFilterOptions = t.any; // FIXME
 
 export const StartsWithFilter = t.tuple([
   t.literal("starts-with"),

@@ -52,11 +52,11 @@ export const BinnableFieldReference = t.union([
   DateTimeFieldReference
 ]);
 
-const BinningStrategyName = t.union([
+export const BinningStrategyName = t.union([
   t.literal("default"),
   t.literal("bin-width")
 ]);
-const BinningStrategyParam = t.union([t.number, t.undefined]);
+export const BinningStrategyParam = t.union([t.number, t.undefined]);
 
 export const BinningStrategy = t.tuple([
   t.literal("binning-strategy"),

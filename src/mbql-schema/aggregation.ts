@@ -31,7 +31,7 @@ export const BasicAggregations = t.union([
   CumulativeSumAggregation
 ]);
 
-type ExpressionAggregationArg = any;
+export type ExpressionAggregationArg = any;
 export const ExpressionAggregationArg: t.Type<
   ExpressionAggregationArg
 > = t.recursion("ExpressionAggregationArg", () =>

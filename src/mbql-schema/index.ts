@@ -1,6 +1,12 @@
 import * as t from "io-ts";
 
-import { QuestionId, MetricId, DatabaseId, TableId } from "./types";
+import {
+  QuestionId,
+  MetricId,
+  DatabaseId,
+  TableId,
+  ExpressionName
+} from "./types";
 import {
   Field,
   FieldOrAggregationReference,
@@ -9,7 +15,7 @@ import {
   FieldLiteralReference
 } from "./field";
 
-import { ExpressionName, Expression } from "./expression";
+import { Expression } from "./expression";
 import { Aggregation } from "./aggregation";
 import { Breakout } from "./breakout";
 import { Filter } from "./filter";
@@ -45,7 +51,7 @@ export const QueryBase = t.partial({
 //   ])
 // );
 
-interface QuerySourceQuery extends t.TypeOf<typeof QueryBase> {
+export interface QuerySourceQuery extends t.TypeOf<typeof QueryBase> {
   "source-query": t.TypeOf<typeof Query>;
 }
 export const QuerySourceQuery: t.Type<QuerySourceQuery> = t.recursion(
@@ -104,7 +110,7 @@ export const TemplateTag = t.taggedUnion("type", [
   TemplateTagDate
 ]);
 
-const TemplateTagName = t.string;
+export const TemplateTagName = t.string;
 
 export const NativeQuery = t.exact(
   t.intersection([
@@ -149,8 +155,8 @@ export type IFieldLiteralReference = t.TypeOf<typeof FieldLiteralReference>;
 // TYPE HELPERS
 
 // https://github.com/microsoft/TypeScript/issues/12936#issuecomment-393202175
-type AllKeys<U> = U extends any ? keyof U : never;
-type ExclusifyUnion<U> = [U] extends [infer V]
+export type AllKeys<U> = U extends any ? keyof U : never;
+export type ExclusifyUnion<U> = [U] extends [infer V]
   ? V extends any
     ? (V & { [P in Exclude<AllKeys<U>, keyof V>]?: never })
     : never

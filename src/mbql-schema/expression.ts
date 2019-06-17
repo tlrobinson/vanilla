@@ -1,10 +1,9 @@
 import * as t from "io-ts";
 
 import { Field } from "./field";
+import { ExpressionName } from "./types";
 
-export const ExpressionName = t.string;
-
-type ExpressionArg = any; // FIXME
+export type ExpressionArg = any; // FIXME
 export const ExpressionArg: t.Type<ExpressionArg> = t.recursion(
   "ExpressionArg",
   () => t.union([t.number, ArithmeticExpression, Field])

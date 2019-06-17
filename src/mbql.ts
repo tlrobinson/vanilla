@@ -8,7 +8,8 @@ import {
   ILocalFieldReference,
   IFieldLiteralReference,
   IForeignFieldReference
-} from "./mbql-schema";
+} from "./mbql-schema/interface";
+
 import { number } from "io-ts";
 
 type Metadata = any;
