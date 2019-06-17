@@ -350,7 +350,7 @@ class JoinList extends MBQLNullableArray<Join> {}
 
 @query("expressions")
 class ExpressionObject extends MBQLNullableObject<Expression> {
-  // [key: string]: Expression;
+  [key: string]: any; // FIXME: Expression;
   // constructor(object: { [key: string]: Expression }) {
   //   Object.assign(this, object);
   // }

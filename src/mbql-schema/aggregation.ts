@@ -31,20 +31,22 @@ export const BasicAggregations = t.union([
   CumulativeSumAggregation
 ]);
 
-type ExpressionAggregation = any; // FIXME
-export const ExpressionAggregation: t.Type<ExpressionAggregation> = t.recursion(
-  "ExpressionAggregation",
-  () =>
-    t.tuple([
-      t.keyof({ "+": null, "-": null, "*": null, "/": null }),
-      t.union([Aggregation, t.number]),
-      t.union([Aggregation, t.number])
-    ])
+type ExpressionAggregationArg = any;
+export const ExpressionAggregationArg: t.Type<
+  ExpressionAggregationArg
+> = t.recursion("ExpressionAggregationArg", () =>
+  t.union([Aggregation, t.number])
 );
+
+export const ExpressionAggregation = t.tuple([
+  t.keyof({ "+": null, "-": null, "*": null, "/": null }),
+  ExpressionAggregationArg,
+  ExpressionAggregationArg
+]);
 
 export const MetricAggregation = t.tuple([t.literal("metric"), MetricId]);
 
-export const Aggregation = t.union([
+export const UnnamedAggregation = t.union([
   BasicAggregations,
   MetricAggregation,
   ExpressionAggregation
@@ -52,6 +54,8 @@ export const Aggregation = t.union([
 
 export const NamedAggregation = t.tuple([
   t.literal("named"),
-  Aggregation,
+  UnnamedAggregation,
   t.string
 ]);
+
+export const Aggregation = t.union([UnnamedAggregation, NamedAggregation]);

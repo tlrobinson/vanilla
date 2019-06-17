@@ -10,7 +10,7 @@ import {
 } from "./field";
 
 import { ExpressionName, Expression } from "./expression";
-import { Aggregation, NamedAggregation } from "./aggregation";
+import { Aggregation } from "./aggregation";
 import { Breakout } from "./breakout";
 import { Filter } from "./filter";
 import { OrderBy } from "./order-by";
@@ -20,7 +20,7 @@ export const QueryBase = t.partial({
   joins: t.array(Join),
   expressions: t.record(ExpressionName, Expression),
   filter: Filter,
-  aggregation: t.array(t.union([Aggregation, NamedAggregation])),
+  aggregation: t.array(Aggregation),
   breakout: t.array(Breakout),
   "order-by": t.array(OrderBy),
   fields: t.array(Field),

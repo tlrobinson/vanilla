@@ -25,12 +25,11 @@ export const ExpressionReference = t.tuple([
   ExpressionName
 ]);
 
-export const JoinedFieldReference =
-  t.any; /*t.tuple([
+export const JoinedFieldReference = t.tuple([
   t.literal("joined-field"),
   JoinAlias,
   t.union([LocalFieldReference, FieldLiteralReference])
-]);*/
+]);
 
 export const ConcreteFieldReference = t.union([
   LocalFieldReference,
