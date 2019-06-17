@@ -56,6 +56,7 @@ class MBQLArray extends VanillaArray implements MBQLInstance {
   static getDefaultParser() {
     return MBQL;
   }
+
   // @ts-ignore
   parent(): MBQLInstance {
     // @ts-ignore
@@ -621,7 +622,7 @@ abstract class FieldAggregation extends MBQLArray {
   displayName() {
     return `${this.aggregationName()} of ${this.dimension().displayName()}`;
   }
-  abstract aggregationName();
+  abstract aggregationName(): string;
 }
 
 @mbql("count")
@@ -702,26 +703,26 @@ class TimeInterval extends MBQLArray {
 }
 
 // EXPRESSION OPERATORS
-abstract class BinaryFieldOperator extends MBQLArray {
+abstract class BinaryOperator extends MBQLArray {
   0: "+" | "-" | "*" | "/";
   1: Expression;
   2: Expression;
 }
 
 @mbql("+")
-class Add extends BinaryFieldOperator {
+class Add extends BinaryOperator {
   0: "+";
 }
 @mbql("-")
-class Subtract extends BinaryFieldOperator {
+class Subtract extends BinaryOperator {
   0: "-";
 }
 @mbql("*")
-class Multiply extends BinaryFieldOperator {
+class Multiply extends BinaryOperator {
   0: "*";
 }
 @mbql("/")
-class Divide extends BinaryFieldOperator {
+class Divide extends BinaryOperator {
   0: "/";
 }
 
