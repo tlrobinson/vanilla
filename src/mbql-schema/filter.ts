@@ -11,12 +11,24 @@ import {
 
 export type AndFilter = any;
 export const AndFilter: t.Type<AndFilter> = t.recursion("AndFilter", () =>
-  t.tuple([t.literal("and"), Filter, Filter])
+  t.tuple([
+    t.literal("and"),
+    Filter,
+    Filter,
+    t.union([Filter, t.undefined]), // FIXME rest
+    t.union([Filter, t.undefined])
+  ])
 );
 
 export type OrFilter = any;
 export const OrFilter: t.Type<OrFilter> = t.recursion("OrFilter", () =>
-  t.tuple([t.literal("or"), Filter, Filter])
+  t.tuple([
+    t.literal("or"),
+    Filter,
+    Filter,
+    t.union([Filter, t.undefined]), // FIXME rest
+    t.union([Filter, t.undefined])
+  ])
 );
 
 export type NotFilter = any;
@@ -24,22 +36,28 @@ export const NotFilter: t.Type<NotFilter> = t.recursion("NotFilter", () =>
   t.tuple([t.literal("not"), Filter])
 );
 
+const TimeIntervalField = t.union([
+  LocalFieldReference,
+  ForeignFieldReference,
+  FieldLiteralReference,
+  JoinedFieldReference
+]);
+const TimeIntervalPeriods = t.union([
+  t.number,
+  t.literal("current"),
+  t.literal("last"),
+  t.literal("next")
+]);
+const TimeIntervalUnit = RelativeDatetimeUnit;
+const TimeIntervalOptions = t.partial({
+  "include-current": t.boolean
+});
 export const TimeIntervalFilter = t.tuple([
   t.literal("time-interval"),
-  t.union([
-    LocalFieldReference,
-    ForeignFieldReference,
-    FieldLiteralReference,
-    JoinedFieldReference
-  ]),
-  t.union([
-    t.number,
-    t.literal("current"),
-    t.literal("last"),
-    t.literal("next")
-  ]),
-  RelativeDatetimeUnit
-  // // FIXME: TimeIntervalOptions
+  TimeIntervalField,
+  TimeIntervalPeriods,
+  TimeIntervalUnit,
+  t.union([TimeIntervalOptions, t.undefined])
 ]);
 
 export const RelativeDatetime = t.union([
@@ -64,11 +82,19 @@ export const OrderComparible = t.union([
   FieldOrRelativeDatetime
 ]);
 
-export const EqualFilter = t.tuple([t.literal("="), Field, EqualityComparible]);
+export const EqualFilter = t.tuple([
+  t.literal("="),
+  Field,
+  EqualityComparible,
+  t.union([EqualityComparible, t.undefined]), // FIXME rest
+  t.union([EqualityComparible, t.undefined])
+]);
 export const NotEqualFilter = t.tuple([
   t.literal("!="),
   Field,
-  EqualityComparible
+  EqualityComparible,
+  t.union([EqualityComparible, t.undefined]), // FIXME rest
+  t.union([EqualityComparible, t.undefined])
 ]);
 export const GreaterThanFilter = t.tuple([
   t.literal(">"),
@@ -122,7 +148,14 @@ export const DoesNotContainsFilter = t.tuple([
   StringFilterOptions
 ]);
 
-export const InsideFilter = t.tuple([t.literal("inside"), Field]); // FIXME
+export const InsideFilter = t.tuple([
+  t.literal("inside"),
+  Field,
+  Field,
+  t.number,
+  t.number
+  // FIXME
+]);
 
 export const IsNullFilter = t.tuple([t.literal("is-null"), Field]);
 export const NotNullFilter = t.tuple([t.literal("not-null"), Field]);

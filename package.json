@@ -5,7 +5,7 @@
   "author": "Tom Robinson <tlrobinson@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "io-ts": "^1.8.6",
+    "io-ts": "1.8.6",
     "underscore": "^1.9.1"
   },
   "devDependencies": {
@@ -13,6 +13,7 @@
     "@types/node": "^12.0.8",
     "@types/underscore": "^1.8.18",
     "jest": "^24.8.0",
+    "json-diff": "^0.5.4",
     "prettier": "^1.16.4",
     "ts-jest": "^24.0.2",
     "ts-node": "^8.3.0",

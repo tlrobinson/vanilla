@@ -12,7 +12,9 @@ export const ExpressionArg: t.Type<ExpressionArg> = t.recursion(
 export const ArithmeticExpression = t.tuple([
   t.keyof({ "+": null, "-": null, "*": null, "/": null }),
   ExpressionArg,
-  ExpressionArg
+  ExpressionArg,
+  t.union([ExpressionArg, t.undefined]), // FIXME rest
+  t.union([ExpressionArg, t.undefined])
 ]);
 
 // TODO: metabase/mbql/schema.clj named this, but why not just call it `Expression`?

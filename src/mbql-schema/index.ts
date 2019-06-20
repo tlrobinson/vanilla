@@ -22,16 +22,18 @@ import { Filter } from "./filter";
 import { OrderBy } from "./order-by";
 import { Join } from "./join";
 
-export const QueryBase = t.partial({
-  joins: t.array(Join),
-  expressions: t.record(ExpressionName, Expression),
-  filter: Filter,
-  aggregation: t.array(Aggregation),
-  breakout: t.array(Breakout),
-  "order-by": t.array(OrderBy),
-  fields: t.array(Field),
-  limit: t.number
-});
+export const QueryBase = t.exact(
+  t.partial({
+    joins: t.array(Join),
+    expressions: t.record(ExpressionName, Expression),
+    filter: Filter,
+    aggregation: t.array(Aggregation),
+    breakout: t.array(Breakout),
+    "order-by": t.array(OrderBy),
+    fields: t.array(Field),
+    limit: t.number
+  })
+);
 
 // interface Query extends t.TypeOf<typeof QueryBase> {
 //   "source-table"?: t.TypeOf<typeof TableId>;
@@ -58,48 +60,55 @@ export const QuerySourceQuery: t.Type<QuerySourceQuery> = t.recursion(
   "QuerySourceQuery",
   () =>
     t.intersection([
-      t.type({
+      t.strict({
         "source-query": Query
       }),
       QueryBase
     ])
 );
 export const QuerySourceTable = t.intersection([
-  t.type({
+  t.strict({
     "source-table": TableId
   }),
   QueryBase
 ]);
 export const Query = t.union([QuerySourceQuery, QuerySourceTable]);
 
-export const StructuredDatasetQuery = t.type({
+export const StructuredDatasetQuery = t.strict({
   type: t.literal("query"),
   database: DatabaseId,
   query: Query
 });
 
-export const TemplateTagBase = t.type({
-  id: t.string,
-  name: t.string,
-  "display-name": t.string
-});
-export const TemplateTagDimension = t.intersection([
+export const TemplateTagBase = t.intersection([
   t.type({
+    id: t.string,
+    name: t.string,
+    "display-name": t.string
+  }),
+  t.partial({
+    required: t.boolean,
+    default: t.union([t.string, t.number]),
+    "widget-type": t.string
+  })
+]);
+export const TemplateTagDimension = t.intersection([
+  t.strict({
     type: t.literal("dimension"),
     dimension: Field
   }),
   TemplateTagBase
 ]);
 export const TemplateTagNumber = t.intersection([
-  t.type({ type: t.literal("number") }),
+  t.strict({ type: t.literal("number") }),
   TemplateTagBase
 ]);
 export const TemplateTagText = t.intersection([
-  t.type({ type: t.literal("text") }),
+  t.strict({ type: t.literal("text") }),
   TemplateTagBase
 ]);
 export const TemplateTagDate = t.intersection([
-  t.type({ type: t.literal("date") }),
+  t.strict({ type: t.literal("date") }),
   TemplateTagBase
 ]);
 
@@ -118,11 +127,12 @@ export const NativeQuery = t.exact(
       query: t.string
     }),
     t.partial({
+      collection: t.string,
       "template-tags": t.record(TemplateTagName, TemplateTag)
     })
   ])
 );
-export const NativeDatasetQuery = t.type({
+export const NativeDatasetQuery = t.strict({
   type: t.literal("native"),
   database: DatabaseId,
   native: NativeQuery
